@@ -1,0 +1,10 @@
+packages:
+  - apps/*
+  - packages/*
+allowBuilds:
+  sharp: false
+  unrs-resolver: false
+  esbuild: true
+  workerd: false
+  "@prisma/engines": true
+  prisma: true

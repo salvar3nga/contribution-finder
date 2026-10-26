@@ -1,0 +1,1 @@
+CREATE DATABASE contribution_finder_test;
