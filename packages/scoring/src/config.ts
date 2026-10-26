@@ -13,6 +13,7 @@ export interface ScoringConfig {
     responseHours: Curve;
     commitDays: Curve;
     minFirstTimePrs: number;
+    minSignalsWithData: number;
   };
   match: {
     weights: {
@@ -32,6 +33,7 @@ export const defaultScoringConfig: ScoringConfig = {
     responseHours: { full: 24, zero: 14 * 24 },
     commitDays: { full: 7, zero: 90 },
     minFirstTimePrs: 3,
+    minSignalsWithData: 2,
   },
   match: {
     weights: {

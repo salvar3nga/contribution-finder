@@ -130,6 +130,15 @@ describe('matchScore', () => {
     expect(matchScore(base)).toEqual(matchScore(base));
   });
 
+  it('matches the repo language case-insensitively', () => {
+    const r = matchScore({
+      ...base,
+      profile: { ...base.profile, languageShare: { TypeScript: 40, Go: 60 } },
+      issue: { ...base.issue, repoLanguage: 'typescript' },
+    });
+    expect(entry(r, 'language').value).toBe(40);
+  });
+
   it('matches topics case-insensitively', () => {
     const r = matchScore({
       ...base,
@@ -171,13 +180,13 @@ describe('matchScore', () => {
       expect(entry(r, 'topics').value).toBeNull();
     });
 
-    it('is not flagged when the profile has topics but no languages', () => {
+    it('is flagged, with topics also dropped, when the profile has topics but no languages', () => {
       const r = matchScore({
         ...base,
         profile: { languageShare: {}, topics: ['react'] },
       });
-      expect(r.emptyProfile).toBe(false);
-      expect(entry(r, 'topics').value).toBe(50);
+      expect(r.emptyProfile).toBe(true);
+      expect(entry(r, 'topics').value).toBeNull();
     });
 
     const empty = { languageShare: {}, topics: [] };
@@ -223,6 +232,23 @@ describe('matchScore', () => {
         },
       );
       expect(r.score).toBe(50);
+    });
+
+    it('returns a null score when every weight is zero', () => {
+      const r = matchScore(base, {
+        ...defaultScoringConfig,
+        match: {
+          ...defaultScoringConfig.match,
+          weights: {
+            language: 0,
+            health: 0,
+            topics: 0,
+            freshness: 0,
+            unclaimed: 0,
+          },
+        },
+      });
+      expect(r.score).toBeNull();
     });
 
     it('changes results when the freshness thresholds change', () => {

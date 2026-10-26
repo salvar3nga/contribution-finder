@@ -138,7 +138,7 @@ describe('healthScore', () => {
         },
         {
           component: 'recentCommits',
-          value: null,
+          value: 100,
           weight: 0,
           contribution: null,
         },
@@ -194,6 +194,17 @@ describe('healthScore', () => {
         },
       );
       expect(entry(r, 'firstTimeMergeRate').value).toBeNull();
+    });
+
+    it('changes the number of signals required for a score', () => {
+      const r = healthScore(
+        { ...full, medianFirstResponseHours: null },
+        {
+          ...defaultScoringConfig,
+          health: { ...defaultScoringConfig.health, minSignalsWithData: 3 },
+        },
+      );
+      expect(r.score).toBeNull();
     });
   });
 });
