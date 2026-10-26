@@ -1,5 +1,14 @@
-import { combine, applyCurve, type BreakdownEntry } from "./breakdown.js";
-import { defaultScoringConfig, type ScoringConfig } from "./config.js";
+import {
+  combine,
+  curveOrNull,
+  noData,
+  type BreakdownEntry,
+} from './breakdown.js';
+import { defaultScoringConfig, type ScoringConfig } from './config.js';
+
+const MINIMUM_SIGNALS_WITH_DATA = 2;
+
+export type HealthComponent = keyof ScoringConfig['health']['weights'];
 
 export interface HealthInput {
   medianFirstResponseHours: number | null;
@@ -9,42 +18,39 @@ export interface HealthInput {
 
 export interface HealthResult {
   score: number | null;
-  breakdown: BreakdownEntry[];
+  breakdown: BreakdownEntry<HealthComponent>[];
 }
 
 export function healthScore(
   input: HealthInput,
   config: ScoringConfig = defaultScoringConfig,
 ): HealthResult {
-  const { weights, responseHours, commitDays, minFirstTimePrs, minSignals } = config.health;
+  const { weights, responseHours, commitDays, minFirstTimePrs } = config.health;
   const prs = input.firstTimePrs;
-  const { score, breakdown, withData } = combine([
+  const { score, breakdown, componentsWithData } = combine<HealthComponent>([
     {
-      component: "responseTime",
+      component: 'responseTime',
       weight: weights.responseTime,
-      value:
-        input.medianFirstResponseHours === null
-          ? null
-          : applyCurve(input.medianFirstResponseHours, responseHours),
+      value: curveOrNull(input.medianFirstResponseHours, responseHours),
     },
     {
-      component: "firstTimeMergeRate",
+      component: 'firstTimeMergeRate',
       weight: weights.firstTimeMergeRate,
-      value: prs && prs.total >= minFirstTimePrs ? (100 * prs.merged) / prs.total : null,
+      value:
+        prs && prs.total >= minFirstTimePrs
+          ? (100 * prs.merged) / prs.total
+          : null,
     },
     {
-      component: "recentCommits",
+      component: 'recentCommits',
       weight: weights.recentCommits,
-      value:
-        input.daysSinceLastCommit === null
-          ? null
-          : applyCurve(input.daysSinceLastCommit, commitDays),
+      value: curveOrNull(input.daysSinceLastCommit, commitDays),
     },
   ]);
-  if (withData < minSignals) {
+  if (componentsWithData < MINIMUM_SIGNALS_WITH_DATA) {
     return {
       score: null,
-      breakdown: breakdown.map((b) => ({ ...b, weight: 0, contribution: null })),
+      breakdown: breakdown.map((b) => noData(b.component)),
     };
   }
   return { score, breakdown };
