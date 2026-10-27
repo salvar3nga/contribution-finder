@@ -8,5 +8,11 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run --passWithNoTests",
     "start": "tsx src/main.ts"
+  },
+  "devDependencies": {
+    "vitest": "^5.0.5"
+  },
+  "dependencies": {
+    "@cf/db": "workspace:*"
   }
 }

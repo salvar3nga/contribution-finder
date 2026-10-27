@@ -8,12 +8,19 @@
     "lint": "eslint src",
     "typecheck": "tsc --noEmit",
     "test": "echo \"no db tests yet\"",
-    "generate": "prisma generate"
+    "generate": "prisma generate",
+    "migrate": "prisma migrate deploy",
+    "migrate:dev": "prisma migrate dev",
+    "postinstall": "prisma generate"
   },
   "dependencies": {
-    "@prisma/client": "^7.10.1"
+    "@prisma/adapter-pg": "^7.10.1",
+    "@prisma/client": "^7.10.1",
+    "pg": "^8.23.1"
   },
   "devDependencies": {
+    "@types/pg": "^8.23.1",
+    "dotenv": "^18.0.9",
     "prisma": "7.10.1"
   }
 }

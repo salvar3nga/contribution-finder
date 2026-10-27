@@ -1,0 +1,39 @@
+{
+  "data": {
+    "rateLimit": { "remaining": 4987, "resetAt": "2026-10-27T04:00:00Z" },
+    "search": {
+      "pageInfo": { "hasNextPage": true, "endCursor": "Y3Vyc29yOjEwMA==" },
+      "nodes": [
+        {
+          "id": "R_kgDOAAAA1",
+          "name": "widgets",
+          "owner": { "login": "acme" },
+          "stargazerCount": 1523,
+          "isFork": false,
+          "isArchived": false,
+          "primaryLanguage": { "name": "TypeScript" },
+          "repositoryTopics": {
+            "nodes": [
+              { "topic": { "name": "ui" } },
+              { "topic": { "name": "react" } }
+            ]
+          },
+          "defaultBranchRef": {
+            "target": { "committedDate": "2026-10-20T08:30:00Z" }
+          }
+        },
+        {
+          "id": "R_kgDOAAAA2",
+          "name": "empty-shell",
+          "owner": { "login": "acme" },
+          "stargazerCount": 800,
+          "isFork": false,
+          "isArchived": false,
+          "primaryLanguage": null,
+          "repositoryTopics": { "nodes": [] },
+          "defaultBranchRef": null
+        }
+      ]
+    }
+  }
+}

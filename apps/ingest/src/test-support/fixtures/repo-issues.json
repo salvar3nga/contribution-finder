@@ -1,0 +1,32 @@
+{
+  "data": {
+    "rateLimit": { "remaining": 4980, "resetAt": "2026-10-27T04:00:00Z" },
+    "search": {
+      "pageInfo": { "hasNextPage": false, "endCursor": null },
+      "nodes": [
+        {
+          "id": "I_kwDOAAAA1",
+          "number": 12,
+          "title": "Docs: fix broken link",
+          "url": "https://github.com/acme/widgets/issues/12",
+          "updatedAt": "2026-10-18T10:00:00Z",
+          "labels": {
+            "nodes": [{ "name": "Good First Issue" }, { "name": "docs" }]
+          },
+          "assignees": { "totalCount": 1 },
+          "closedByPullRequestsReferences": { "totalCount": 0 }
+        },
+        {
+          "id": "I_kwDOAAAA2",
+          "number": 15,
+          "title": "Add dark mode",
+          "url": "https://github.com/acme/widgets/issues/15",
+          "updatedAt": "2026-10-22T10:00:00Z",
+          "labels": { "nodes": [{ "name": "help wanted" }] },
+          "assignees": { "totalCount": 0 },
+          "closedByPullRequestsReferences": { "totalCount": 1 }
+        }
+      ]
+    }
+  }
+}

@@ -1,0 +1,57 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum IssueState {
+  open
+  closed
+}
+
+model Repo {
+  id                      String    @id
+  owner                   String
+  name                    String
+  language                String?
+  stars                   Int
+  topics                  String[]
+  lastCommitAt            DateTime?
+  medianFirstResponseHours Float?
+  firstTimePrsTotal       Int       @default(0)
+  firstTimePrsMerged      Int       @default(0)
+  active                  Boolean   @default(false)
+  ingestedAt              DateTime?
+  issues                  Issue[]
+
+  @@unique([owner, name])
+  @@index([ingestedAt])
+}
+
+model Issue {
+  id             String     @id
+  repoId         String
+  repo           Repo       @relation(fields: [repoId], references: [id], onDelete: Cascade)
+  number         Int
+  title          String
+  url            String
+  labels         String[]
+  claimed        Boolean
+  state          IssueState
+  lastActivityAt DateTime
+
+  @@index([repoId, state])
+}
+
+model IngestRun {
+  id                  Int      @id @default(autoincrement())
+  startedAt           DateTime
+  durationMs          Int
+  reposIngested       Int
+  issuesIngested      Int
+  errors              Int
+  stoppedForRateLimit Boolean
+}
