@@ -1,26 +1,25 @@
 import { combine, curveOrNull, type BreakdownEntry } from './breakdown.js';
 import { defaultScoringConfig, type ScoringConfig } from './config.js';
 
-export type HealthComponent = keyof ScoringConfig['health']['weights'];
+export type HealthSignal = keyof ScoringConfig['health']['weights'];
+
+interface FirstTimePrs {
+  total: number;
+  merged: number;
+}
 
 export interface HealthInput {
   medianFirstResponseHours: number | null;
-  firstTimePrs: { total: number; merged: number } | null;
+  firstTimePrs: FirstTimePrs | null;
   daysSinceLastCommit: number | null;
 }
 
 export interface HealthResult {
   score: number | null;
-  breakdown: BreakdownEntry<HealthComponent>[];
+  breakdown: BreakdownEntry<HealthSignal>[];
 }
 
-function mergeRate({
-  total,
-  merged,
-}: {
-  total: number;
-  merged: number;
-}): number {
+function mergeRate({ total, merged }: FirstTimePrs): number {
   return (100 * merged) / total;
 }
 
@@ -36,7 +35,7 @@ export function healthScore(
     minSignalsWithData,
   } = config.health;
   const { firstTimePrs } = input;
-  const { score, breakdown, componentsWithData } = combine<HealthComponent>([
+  const { score, breakdown, weightedComponents } = combine<HealthSignal>([
     {
       component: 'responseTime',
       weight: weights.responseTime,
@@ -46,7 +45,9 @@ export function healthScore(
       component: 'firstTimeMergeRate',
       weight: weights.firstTimeMergeRate,
       value:
-        firstTimePrs && firstTimePrs.total >= minFirstTimePrs
+        firstTimePrs &&
+        firstTimePrs.total > 0 &&
+        firstTimePrs.total >= minFirstTimePrs
           ? mergeRate(firstTimePrs)
           : null,
     },
@@ -56,7 +57,7 @@ export function healthScore(
       value: curveOrNull(input.daysSinceLastCommit, commitDays),
     },
   ]);
-  if (componentsWithData < minSignalsWithData) {
+  if (weightedComponents < minSignalsWithData) {
     return {
       score: null,
       breakdown: breakdown.map((entry) => ({

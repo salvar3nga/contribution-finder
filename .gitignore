@@ -6,6 +6,10 @@ dist
 .agents
 .claude
 docs
+.github/agents
+.github/hooks
+.github/skills
+.codex/
 *.tsbuildinfo
 .DS_Store
 coverage

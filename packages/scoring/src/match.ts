@@ -1,4 +1,9 @@
-import { applyCurve, combine, type BreakdownEntry } from './breakdown.js';
+import {
+  applyCurve,
+  clampScore,
+  combine,
+  type BreakdownEntry,
+} from './breakdown.js';
 import { defaultScoringConfig, type ScoringConfig } from './config.js';
 
 export type MatchComponent = keyof ScoringConfig['match']['weights'];
@@ -40,10 +45,9 @@ function languageShare(
   language: string,
 ): number {
   const wanted = language.toLowerCase();
-  const match = Object.entries(shareByLanguage).find(
-    ([name]) => name.toLowerCase() === wanted,
-  );
-  return match?.[1] ?? 0;
+  return Object.entries(shareByLanguage)
+    .filter(([name]) => name.toLowerCase() === wanted)
+    .reduce((total, [, share]) => total + share, 0);
 }
 
 export function matchScore(
@@ -59,10 +63,14 @@ export function matchScore(
       component: 'language',
       weight: weights.language,
       value: hasLanguages
-        ? languageShare(profile.languageShare, issue.repoLanguage)
+        ? clampScore(languageShare(profile.languageShare, issue.repoLanguage))
         : null,
     },
-    { component: 'health', weight: weights.health, value: issue.repoHealth },
+    {
+      component: 'health',
+      weight: weights.health,
+      value: issue.repoHealth === null ? null : clampScore(issue.repoHealth),
+    },
     {
       component: 'topics',
       weight: weights.topics,

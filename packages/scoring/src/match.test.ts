@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { defaultScoringConfig } from './config.js';
 import { matchScore, type MatchInput } from './match.js';
+import { breakdownEntry } from './test-support.js';
 
 const { freshnessDays } = defaultScoringConfig.match;
 
@@ -15,9 +16,6 @@ const base: MatchInput = {
   },
 };
 
-const entry = (r: ReturnType<typeof matchScore>, component: string) =>
-  r.breakdown.find((b) => b.component === component)!;
-
 describe('matchScore', () => {
   it('scores 100 for a perfect match', () => {
     const r = matchScore(base);
@@ -30,7 +28,7 @@ describe('matchScore', () => {
       ...base,
       profile: { ...base.profile, languageShare: { TypeScript: 40, Go: 60 } },
     });
-    expect(entry(r, 'language').value).toBe(40);
+    expect(breakdownEntry(r, 'language').value).toBe(40);
   });
 
   it('scores 0 for a language the profile never used, but still returns a score', () => {
@@ -38,7 +36,7 @@ describe('matchScore', () => {
       ...base,
       issue: { ...base.issue, repoLanguage: 'Rust' },
     });
-    expect(entry(r, 'language').value).toBe(0);
+    expect(breakdownEntry(r, 'language').value).toBe(0);
     expect(r.score).toBeCloseTo(65);
   });
 
@@ -48,17 +46,17 @@ describe('matchScore', () => {
       profile: { ...base.profile, topics: ['react', 'cli', 'api'] },
       issue: { ...base.issue, repoTopics: ['react', 'docs'] },
     });
-    expect(entry(r, 'topics').value).toBe(25);
+    expect(breakdownEntry(r, 'topics').value).toBe(25);
   });
 
   it('scores 0 topic overlap when the repo has no topics but the profile does', () => {
     const r = matchScore({ ...base, issue: { ...base.issue, repoTopics: [] } });
-    expect(entry(r, 'topics').value).toBe(0);
+    expect(breakdownEntry(r, 'topics').value).toBe(0);
   });
 
   it('marks topics as no data when the profile has no topics', () => {
     const r = matchScore({ ...base, profile: { ...base.profile, topics: [] } });
-    expect(entry(r, 'topics')).toEqual({
+    expect(breakdownEntry(r, 'topics')).toEqual({
       component: 'topics',
       value: null,
       weight: 0,
@@ -78,7 +76,7 @@ describe('matchScore', () => {
       ...base,
       issue: { ...base.issue, daysSinceActivity: days },
     });
-    expect(entry(r, 'freshness').value).toBe(value);
+    expect(breakdownEntry(r, 'freshness').value).toBe(value);
   });
 
   it('ranks a Claimed issue lower without hiding it', () => {
@@ -87,7 +85,7 @@ describe('matchScore', () => {
       ...base,
       issue: { ...base.issue, claimed: true },
     });
-    expect(entry(claimed, 'unclaimed').value).toBe(0);
+    expect(breakdownEntry(claimed, 'unclaimed').value).toBe(0);
     expect(claimed.score).toBeCloseTo(90);
     expect(claimed.score!).toBeLessThan(open.score!);
   });
@@ -97,13 +95,13 @@ describe('matchScore', () => {
       ...base,
       issue: { ...base.issue, repoHealth: 40 },
     });
-    expect(entry(withHealth, 'health').value).toBe(40);
+    expect(breakdownEntry(withHealth, 'health').value).toBe(40);
     const noHealth = matchScore({
       ...base,
       issue: { ...base.issue, repoHealth: null },
     });
-    expect(entry(noHealth, 'health').weight).toBe(0);
-    expect(entry(noHealth, 'language').weight).toBeCloseTo(0.35 / 0.7);
+    expect(breakdownEntry(noHealth, 'health').weight).toBe(0);
+    expect(breakdownEntry(noHealth, 'language').weight).toBeCloseTo(0.35 / 0.7);
   });
 
   it('has breakdown contributions that sum to the score and weights that sum to 1', () => {
@@ -130,13 +128,43 @@ describe('matchScore', () => {
     expect(matchScore(base)).toEqual(matchScore(base));
   });
 
+  it.each([
+    [120, 100],
+    [-5, 0],
+  ])('clamps a repo health of %i to %i', (repoHealth, value) => {
+    const r = matchScore({ ...base, issue: { ...base.issue, repoHealth } });
+    expect(breakdownEntry(r, 'health').value).toBe(value);
+  });
+
+  it.each([
+    [150, 100],
+    [-10, 0],
+  ])('clamps a language share of %i to %i', (share, value) => {
+    const r = matchScore({
+      ...base,
+      profile: { ...base.profile, languageShare: { TypeScript: share } },
+    });
+    expect(breakdownEntry(r, 'language').value).toBe(value);
+  });
+
   it('matches the repo language case-insensitively', () => {
     const r = matchScore({
       ...base,
       profile: { ...base.profile, languageShare: { TypeScript: 40, Go: 60 } },
       issue: { ...base.issue, repoLanguage: 'typescript' },
     });
-    expect(entry(r, 'language').value).toBe(40);
+    expect(breakdownEntry(r, 'language').value).toBe(40);
+  });
+
+  it('sums language shares whose names differ only by case', () => {
+    const r = matchScore({
+      ...base,
+      profile: {
+        ...base.profile,
+        languageShare: { TypeScript: 30, typescript: 20, Go: 50 },
+      },
+    });
+    expect(breakdownEntry(r, 'language').value).toBe(50);
   });
 
   it('matches topics case-insensitively', () => {
@@ -144,7 +172,7 @@ describe('matchScore', () => {
       ...base,
       issue: { ...base.issue, repoTopics: ['React', 'CLI'] },
     });
-    expect(entry(r, 'topics').value).toBe(100);
+    expect(breakdownEntry(r, 'topics').value).toBe(100);
   });
 
   it('keeps a zero-weight component in the breakdown with its value', () => {
@@ -161,7 +189,7 @@ describe('matchScore', () => {
         },
       },
     });
-    expect(entry(r, 'health')).toEqual({
+    expect(breakdownEntry(r, 'health')).toEqual({
       component: 'health',
       value: 100,
       weight: 0,
@@ -176,8 +204,8 @@ describe('matchScore', () => {
         profile: { languageShare: { TypeScript: 100 }, topics: [] },
       });
       expect(r.emptyProfile).toBe(false);
-      expect(entry(r, 'language').value).toBe(100);
-      expect(entry(r, 'topics').value).toBeNull();
+      expect(breakdownEntry(r, 'language').value).toBe(100);
+      expect(breakdownEntry(r, 'topics').value).toBeNull();
     });
 
     it('is flagged, with topics also dropped, when the profile has topics but no languages', () => {
@@ -186,7 +214,7 @@ describe('matchScore', () => {
         profile: { languageShare: {}, topics: ['react'] },
       });
       expect(r.emptyProfile).toBe(true);
-      expect(entry(r, 'topics').value).toBeNull();
+      expect(breakdownEntry(r, 'topics').value).toBeNull();
     });
 
     const empty = { languageShare: {}, topics: [] };
@@ -194,9 +222,23 @@ describe('matchScore', () => {
     it('drops language and topics and flags the result', () => {
       const r = matchScore({ ...base, profile: empty });
       expect(r.emptyProfile).toBe(true);
-      expect(entry(r, 'language').value).toBeNull();
-      expect(entry(r, 'topics').value).toBeNull();
+      expect(breakdownEntry(r, 'language').value).toBeNull();
+      expect(breakdownEntry(r, 'topics').value).toBeNull();
       expect(r.breakdown.reduce((s, b) => s + b.weight, 0)).toBeCloseTo(1);
+    });
+
+    it('ranks by freshness and unclaimed only when health is also missing', () => {
+      const r = matchScore({
+        profile: empty,
+        issue: {
+          ...base.issue,
+          repoHealth: null,
+          daysSinceActivity: freshnessDays.full,
+          claimed: false,
+        },
+      });
+      expect(r.score).toBeCloseTo(100);
+      expect(breakdownEntry(r, 'health').value).toBeNull();
     });
 
     it('ranks by health, freshness and unclaimed only', () => {
@@ -262,7 +304,7 @@ describe('matchScore', () => {
           },
         },
       );
-      expect(entry(r, 'freshness').value).toBe(0);
+      expect(breakdownEntry(r, 'freshness').value).toBe(0);
     });
   });
 });

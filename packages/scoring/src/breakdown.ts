@@ -12,7 +12,12 @@ type ComponentInput<Component extends string> = Omit<
   'contribution'
 >;
 
+export function clampScore(value: number): number {
+  return Math.min(100, Math.max(0, value));
+}
+
 export function applyCurve(input: number, { full, zero }: Curve): number {
+  if (full === zero) return input <= full ? 100 : 0;
   const progress = (input - zero) / (full - zero);
   return 100 * Math.min(1, Math.max(0, progress));
 }
@@ -32,28 +37,33 @@ export function combine<Component extends string>(
 ): {
   score: number | null;
   breakdown: BreakdownEntry<Component>[];
-  componentsWithData: number;
+  weightedComponents: number;
 } {
-  const withData = components.filter((candidate) => candidate.value !== null);
+  const withData = components.filter((component) => component.value !== null);
   const totalWeight = withData.reduce(
-    (sum, present) => sum + present.weight,
+    (sum, component) => sum + component.weight,
     0,
   );
-  const breakdown = components.map((input): BreakdownEntry<Component> => {
-    if (input.value === null || totalWeight === 0) {
-      return noData(input.component);
+  const breakdown = components.map((component): BreakdownEntry<Component> => {
+    if (component.value === null || totalWeight === 0) {
+      return noData(component.component);
     }
-    const weight = input.weight / totalWeight;
+    const weight = component.weight / totalWeight;
     return {
-      component: input.component,
-      value: input.value,
+      component: component.component,
+      value: component.value,
       weight,
-      contribution: input.value * weight,
+      contribution: component.value * weight,
     };
   });
   const score =
     totalWeight === 0
       ? null
       : breakdown.reduce((sum, entry) => sum + (entry.contribution ?? 0), 0);
-  return { score, breakdown, componentsWithData: withData.length };
+  return {
+    score,
+    breakdown,
+    weightedComponents: withData.filter((component) => component.weight > 0)
+      .length,
+  };
 }

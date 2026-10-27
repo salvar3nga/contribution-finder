@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { defaultScoringConfig } from './config.js';
 import { healthScore, type HealthInput } from './health.js';
+import { breakdownEntry } from './test-support.js';
 
 const { responseHours, commitDays, minFirstTimePrs } =
   defaultScoringConfig.health;
@@ -10,9 +11,6 @@ const full: HealthInput = {
   firstTimePrs: { total: 10, merged: 10 },
   daysSinceLastCommit: commitDays.full,
 };
-
-const entry = (r: ReturnType<typeof healthScore>, component: string) =>
-  r.breakdown.find((b) => b.component === component)!;
 
 describe('healthScore', () => {
   it('scores 100 when every signal is at its best threshold', () => {
@@ -36,7 +34,7 @@ describe('healthScore', () => {
     [responseHours.zero * 3, 0],
   ])('response time of %i h gives signal value %i', (hours, value) => {
     const r = healthScore({ ...full, medianFirstResponseHours: hours });
-    expect(entry(r, 'responseTime').value).toBe(value);
+    expect(breakdownEntry(r, 'responseTime').value).toBe(value);
   });
 
   it.each([
@@ -47,12 +45,12 @@ describe('healthScore', () => {
     [commitDays.zero * 4, 0],
   ])('%d days since last commit gives signal value %i', (days, value) => {
     const r = healthScore({ ...full, daysSinceLastCommit: days });
-    expect(entry(r, 'recentCommits').value).toBe(value);
+    expect(breakdownEntry(r, 'recentCommits').value).toBe(value);
   });
 
   it('uses the merged share of first-time PRs as the merge-rate value', () => {
     const r = healthScore({ ...full, firstTimePrs: { total: 4, merged: 1 } });
-    expect(entry(r, 'firstTimeMergeRate').value).toBe(25);
+    expect(breakdownEntry(r, 'firstTimeMergeRate').value).toBe(25);
   });
 
   it.each([
@@ -62,7 +60,7 @@ describe('healthScore', () => {
     '%i of 10 first-time PRs merged gives merge-rate value %i',
     (merged, value) => {
       const r = healthScore({ ...full, firstTimePrs: { total: 10, merged } });
-      expect(entry(r, 'firstTimeMergeRate').value).toBe(value);
+      expect(breakdownEntry(r, 'firstTimeMergeRate').value).toBe(value);
     },
   );
 
@@ -87,14 +85,14 @@ describe('healthScore', () => {
         },
         daysSinceLastCommit: commitDays.zero,
       });
-      expect(entry(r, 'firstTimeMergeRate')).toEqual({
+      expect(breakdownEntry(r, 'firstTimeMergeRate')).toEqual({
         component: 'firstTimeMergeRate',
         value: null,
         weight: 0,
         contribution: null,
       });
-      expect(entry(r, 'responseTime').weight).toBeCloseTo(2 / 3);
-      expect(entry(r, 'recentCommits').weight).toBeCloseTo(1 / 3);
+      expect(breakdownEntry(r, 'responseTime').weight).toBeCloseTo(2 / 3);
+      expect(breakdownEntry(r, 'recentCommits').weight).toBeCloseTo(1 / 3);
       expect(r.score).toBeCloseTo(100 * (2 / 3));
     });
 
@@ -103,7 +101,7 @@ describe('healthScore', () => {
         ...full,
         firstTimePrs: { total: minFirstTimePrs, merged: minFirstTimePrs },
       });
-      expect(entry(r, 'firstTimeMergeRate').value).toBe(100);
+      expect(breakdownEntry(r, 'firstTimeMergeRate').value).toBe(100);
     });
 
     it('treats null inputs as no data', () => {
@@ -112,8 +110,8 @@ describe('healthScore', () => {
         firstTimePrs: null,
         daysSinceLastCommit: 7,
       });
-      expect(entry(r, 'responseTime').value).toBeNull();
-      expect(entry(r, 'firstTimeMergeRate').value).toBeNull();
+      expect(breakdownEntry(r, 'responseTime').value).toBeNull();
+      expect(breakdownEntry(r, 'firstTimeMergeRate').value).toBeNull();
     });
 
     it('returns a null score when fewer than two signals have data', () => {
@@ -167,7 +165,7 @@ describe('healthScore', () => {
           },
         },
       );
-      expect(entry(r, 'responseTime').weight).toBe(0.5);
+      expect(breakdownEntry(r, 'responseTime').weight).toBe(0.5);
       expect(r.score).toBe(50);
     });
 
@@ -182,7 +180,24 @@ describe('healthScore', () => {
           },
         },
       );
-      expect(entry(r, 'recentCommits').value).toBe(0);
+      expect(breakdownEntry(r, 'recentCommits').value).toBe(0);
+    });
+
+    it.each([
+      [30, 100],
+      [31, 0],
+    ])('treats equal thresholds as a step: %i days gives %i', (days, value) => {
+      const r = healthScore(
+        { ...full, daysSinceLastCommit: days },
+        {
+          ...defaultScoringConfig,
+          health: {
+            ...defaultScoringConfig.health,
+            commitDays: { full: 30, zero: 30 },
+          },
+        },
+      );
+      expect(breakdownEntry(r, 'recentCommits').value).toBe(value);
     });
 
     it('changes the minimum first-time PR count', () => {
@@ -193,7 +208,36 @@ describe('healthScore', () => {
           health: { ...defaultScoringConfig.health, minFirstTimePrs: 5 },
         },
       );
-      expect(entry(r, 'firstTimeMergeRate').value).toBeNull();
+      expect(breakdownEntry(r, 'firstTimeMergeRate').value).toBeNull();
+    });
+
+    it('treats zero first-time PRs as no data even when the minimum is zero', () => {
+      const r = healthScore(
+        { ...full, firstTimePrs: { total: 0, merged: 0 } },
+        {
+          ...defaultScoringConfig,
+          health: { ...defaultScoringConfig.health, minFirstTimePrs: 0 },
+        },
+      );
+      expect(breakdownEntry(r, 'firstTimeMergeRate').value).toBeNull();
+    });
+
+    it('does not count a zero-weight signal toward the required signals', () => {
+      const r = healthScore(
+        { ...full, medianFirstResponseHours: null },
+        {
+          ...defaultScoringConfig,
+          health: {
+            ...defaultScoringConfig.health,
+            weights: {
+              responseTime: 0.4,
+              firstTimeMergeRate: 0.4,
+              recentCommits: 0,
+            },
+          },
+        },
+      );
+      expect(r.score).toBeNull();
     });
 
     it('changes the number of signals required for a score', () => {

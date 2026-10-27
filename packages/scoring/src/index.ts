@@ -6,7 +6,7 @@ export {
 } from './config.js';
 export {
   healthScore,
-  type HealthComponent,
+  type HealthSignal,
   type HealthInput,
   type HealthResult,
 } from './health.js';
