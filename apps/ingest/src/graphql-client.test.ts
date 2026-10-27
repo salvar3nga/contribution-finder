@@ -107,4 +107,42 @@ describe('GraphQL GitHub adapter', () => {
     ]);
     expect(rateLimit.remaining).toBe(4978);
   });
+
+  it('retries a transient 5xx response before giving up', async () => {
+    const responses = [502, 502, 200];
+    const flakyClient = createGraphqlGitHubClient({
+      token: 'test-token',
+      rateLimitFloor: 200,
+      eligibleLabels: ['good first issue'],
+      retryDelayMs: 0,
+      fetch: async () => {
+        const status = responses.shift()!;
+        return new Response(JSON.stringify(searchRepos), { status });
+      },
+    });
+
+    const { value } = await flakyClient.searchRepos(
+      { language: 'TypeScript', minStars: 500, maxStars: null },
+      null,
+    );
+
+    expect(value.repos).toHaveLength(2);
+  });
+
+  it('fails after exhausting retries on a persistent 5xx', async () => {
+    const brokenClient = createGraphqlGitHubClient({
+      token: 'test-token',
+      rateLimitFloor: 200,
+      eligibleLabels: ['good first issue'],
+      retryDelayMs: 0,
+      fetch: async () => new Response('', { status: 502 }),
+    });
+
+    await expect(
+      brokenClient.searchRepos(
+        { language: 'TypeScript', minStars: 500, maxStars: null },
+        null,
+      ),
+    ).rejects.toThrow('502');
+  });
 });

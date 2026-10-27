@@ -10,6 +10,9 @@ import type {
 
 const endpoint = 'https://api.github.com/graphql';
 const searchPageSize = 100;
+const repoSearchPageSize = 25;
+const maxRequestAttempts = 4;
+const defaultRetryDelayMs = 2000;
 const recentItemsPageSize = 50;
 const maxPullRequestPages = 10;
 
@@ -18,6 +21,7 @@ export interface GraphqlClientOptions {
   rateLimitFloor: number;
   eligibleLabels: string[];
   maxRecentItems?: number;
+  retryDelayMs?: number;
   fetch?: typeof fetch;
 }
 
@@ -79,7 +83,7 @@ const pageInfoFragment = 'pageInfo { hasNextPage endCursor }';
 const searchReposQuery = `
 query($query: String!, $cursor: String) {
   ${rateLimitFragment}
-  search(query: $query, type: REPOSITORY, first: ${searchPageSize}, after: $cursor) {
+  search(query: $query, type: REPOSITORY, first: ${repoSearchPageSize}, after: $cursor) {
     ${pageInfoFragment}
     nodes {
       ... on Repository {
@@ -184,24 +188,36 @@ export function createGraphqlGitHubClient(
     rateLimitFloor,
     eligibleLabels,
     maxRecentItems = recentItemsPageSize,
+    retryDelayMs = defaultRetryDelayMs,
     fetch: fetchImpl = fetch,
   } = options;
+
+  async function fetchWithRetry(body: string): Promise<Response> {
+    for (let attempt = 1; ; attempt += 1) {
+      const response = await fetchImpl(endpoint, {
+        method: 'POST',
+        headers: {
+          authorization: `Bearer ${token}`,
+          'content-type': 'application/json',
+        },
+        body,
+      });
+      if (response.ok) return response;
+      const retryable = response.status >= 500;
+      if (!retryable || attempt >= maxRequestAttempts) {
+        throw new Error(`GitHub GraphQL responded ${response.status}`);
+      }
+      await new Promise((resolve) =>
+        setTimeout(resolve, retryDelayMs * attempt),
+      );
+    }
+  }
 
   async function request<Data extends { rateLimit: RawRateLimit }>(
     query: string,
     variables: Record<string, unknown>,
   ): Promise<{ data: Data; rateLimit: RateLimit }> {
-    const response = await fetchImpl(endpoint, {
-      method: 'POST',
-      headers: {
-        authorization: `Bearer ${token}`,
-        'content-type': 'application/json',
-      },
-      body: JSON.stringify({ query, variables }),
-    });
-    if (!response.ok) {
-      throw new Error(`GitHub GraphQL responded ${response.status}`);
-    }
+    const response = await fetchWithRetry(JSON.stringify({ query, variables }));
     const body = (await response.json()) as {
       data?: Data;
       errors?: { message: string }[];
