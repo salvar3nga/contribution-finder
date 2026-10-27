@@ -5,7 +5,8 @@ dist
 .env.local
 .agents
 .claude
-docs
+docs/adr
+docs/specs
 .github/agents
 .github/hooks
 .github/skills
