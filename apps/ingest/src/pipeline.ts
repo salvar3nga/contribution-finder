@@ -15,6 +15,7 @@ export interface IngestOptions {
   config?: IngestConfig;
   now: Date;
   maxRepos?: number;
+  discover?: boolean;
   log: (message: string) => void;
 }
 
@@ -50,7 +51,7 @@ async function discoverRepos(
   options: IngestOptions,
   state: RunState,
 ): Promise<void> {
-  const { client, db, config = defaultIngestConfig, maxRepos } = options;
+  const { client, db, config = defaultIngestConfig, maxRepos, log } = options;
   let discovered = 0;
   for (const language of config.languages) {
     for (const band of config.starBands) {
@@ -67,6 +68,9 @@ async function discoverRepos(
           discovered += 1;
         }
         state.stoppedForRateLimit = belowFloor(rateLimit, config);
+        log(
+          `Discovery ${language} ${band.minStars}+ stars: ${discovered} repos found so far`,
+        );
         cursor = value.nextCursor;
       } while (cursor !== null);
     }
@@ -209,7 +213,14 @@ export function shouldFail(
 export async function runIngest(
   options: IngestOptions,
 ): Promise<IngestSummary> {
-  const { db, config = defaultIngestConfig, now, maxRepos, log } = options;
+  const {
+    db,
+    config = defaultIngestConfig,
+    now,
+    maxRepos,
+    discover = true,
+    log,
+  } = options;
   const startedAtMs = Date.now();
   const state: RunState = { stoppedForRateLimit: false };
   const summary: IngestSummary = {
@@ -220,7 +231,7 @@ export async function runIngest(
     durationMs: 0,
     stoppedForRateLimit: false,
   };
-  await discoverRepos(options, state);
+  if (discover) await discoverRepos(options, state);
   const repos = state.stoppedForRateLimit
     ? []
     : await db.repo.findMany({
@@ -236,6 +247,9 @@ export async function runIngest(
       const result = await refreshRepo(options, repo);
       summary.reposIngested += 1;
       summary.issuesIngested += result.issuesIngested;
+      if (summary.attemptedRepos % 100 === 0) {
+        log(`Refreshed ${summary.attemptedRepos} of ${repos.length} repos`);
+      }
       if (belowFloor(result.rateLimit, config)) {
         state.stoppedForRateLimit = true;
         break;

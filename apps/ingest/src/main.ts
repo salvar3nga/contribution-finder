@@ -10,11 +10,25 @@ function requiredEnv(name: string): string {
   return value;
 }
 
-function parseMaxRepos(): number | undefined {
+interface CliOptions {
+  maxRepos: number | undefined;
+  discover: boolean;
+}
+
+function parseCliOptions(): CliOptions {
   const { values } = parseArgs({
-    options: { 'max-repos': { type: 'string' } },
+    options: {
+      'max-repos': { type: 'string' },
+      'skip-discovery': { type: 'boolean' },
+    },
   });
-  const raw = values['max-repos'];
+  return {
+    maxRepos: parseMaxRepos(values['max-repos']),
+    discover: !values['skip-discovery'],
+  };
+}
+
+function parseMaxRepos(raw: string | undefined): number | undefined {
   if (raw === undefined) return undefined;
   const maxRepos = Number(raw);
   if (!Number.isInteger(maxRepos) || maxRepos < 1) {
@@ -24,7 +38,7 @@ function parseMaxRepos(): number | undefined {
 }
 
 async function main(): Promise<number> {
-  const maxRepos = parseMaxRepos();
+  const { maxRepos, discover } = parseCliOptions();
   const db = createDb(requiredEnv('DATABASE_URL'));
   try {
     const client = createGraphqlGitHubClient({
@@ -38,6 +52,7 @@ async function main(): Promise<number> {
       db,
       now: new Date(),
       maxRepos,
+      discover,
       log: console.log,
     });
     return shouldFail(summary, defaultIngestConfig) ? 1 : 0;

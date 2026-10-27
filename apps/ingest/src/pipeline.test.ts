@@ -28,7 +28,10 @@ afterAll(async () => {
   await db.$disconnect();
 });
 
-function ingest(client: FakeGitHub, options: { maxRepos?: number } = {}) {
+function ingest(
+  client: FakeGitHub,
+  options: { maxRepos?: number; discover?: boolean } = {},
+) {
   return runIngest({
     client,
     db,
@@ -97,6 +100,17 @@ describe('storing repos and issues', () => {
     await ingest(client);
 
     expect(await db.repo.count()).toBe(3);
+  });
+
+  it('refreshes already-stored repos without searching when discovery is off', async () => {
+    await ingest(fakeGitHub({ repos: [aRepo('alpha')] }));
+    const refreshOnly = fakeGitHub({ repos: [] });
+
+    const summary = await ingest(refreshOnly, { discover: false });
+
+    expect(refreshOnly.searchedSlices).toEqual([]);
+    expect(refreshOnly.fetchedRepoNames).toEqual(['alpha']);
+    expect(summary.reposIngested).toBe(1);
   });
 
   it('stores a repo found in two slices once', async () => {
