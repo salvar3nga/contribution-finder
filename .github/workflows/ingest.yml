@@ -14,7 +14,13 @@ jobs:
           node-version: 22
           cache: pnpm
       - run: pnpm install --frozen-lockfile
-      - run: pnpm --filter @cf/db migrate
+      - name: Migrate database (retries while Neon wakes up)
+        run: |
+          for attempt in 1 2 3 4 5; do
+            pnpm --filter @cf/db migrate && exit 0
+            sleep 10
+          done
+          exit 1
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
       - run: pnpm --filter @cf/ingest start
