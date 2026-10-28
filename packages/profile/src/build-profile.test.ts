@@ -1,13 +1,13 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import type { PrismaClient } from '@cf/db';
-import { createProfileBuilder } from './build-profile.js';
-import { RateLimitedError } from './github-user-client.js';
-import { createCleanTestDb } from './test-support/database.js';
+import { createProfileBuilder } from './build-profile';
+import { RateLimitedError } from './github-user-client';
+import { createCleanTestDb } from './test-support/database';
 import {
   aRepo,
   fakeUserClient,
   foundActivity,
-} from './test-support/fake-user-client.js';
+} from './test-support/fake-user-client';
 
 const now = new Date('2026-10-28T12:00:00Z');
 const hour = 60 * 60 * 1000;

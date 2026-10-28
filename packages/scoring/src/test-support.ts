@@ -1,4 +1,4 @@
-import type { BreakdownEntry } from './breakdown.js';
+import type { BreakdownEntry } from './breakdown';
 
 export function breakdownEntry<Component extends string>(
   result: { breakdown: BreakdownEntry<Component>[] },

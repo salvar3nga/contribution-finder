@@ -2,14 +2,14 @@
 
 ## Root scripts
 
-| Command          | What it does                   |
-| ---------------- | ------------------------------ |
-| `pnpm dev`       | Starts the web app (`@cf/web`) |
-| `pnpm build`     | Builds every package           |
-| `pnpm lint`      | Lints every package            |
-| `pnpm typecheck` | Typechecks every package       |
-| `pnpm test`      | Runs every package's tests     |
-| `pnpm format`    | Formats the repo with Prettier |
+| Command          | What it does                                                                     |
+| ---------------- | -------------------------------------------------------------------------------- |
+| `pnpm dev`       | Starts the web app (`@cf/web`)                                                   |
+| `pnpm build`     | Builds every package                                                             |
+| `pnpm lint`      | Lints every package                                                              |
+| `pnpm typecheck` | Typechecks every package                                                         |
+| `pnpm test`      | Runs every package's tests, one package at a time (they share the test database) |
+| `pnpm format`    | Formats the repo with Prettier                                                   |
 
 ## Database (`@cf/db`)
 

@@ -1,10 +1,11 @@
 # Environment variables
 
-| Variable            | Used by                  | Description                                                                             |
-| ------------------- | ------------------------ | --------------------------------------------------------------------------------------- |
-| `DATABASE_URL`      | ingest, `@cf/db` migrate | Postgres connection string. Required                                                    |
-| `GITHUB_TOKEN`      | ingest                   | GitHub token for the GraphQL API. Read-only public access is enough. Required           |
-| `TEST_DATABASE_URL` | ingest tests             | Test database. Defaults to `postgresql://cf:cf@localhost:5432/contribution_finder_test` |
+| Variable              | Used by                       | Description                                                                                    |
+| --------------------- | ----------------------------- | ---------------------------------------------------------------------------------------------- |
+| `DATABASE_URL`        | ingest, `@cf/db` migrate      | Postgres connection string. Required                                                           |
+| `GITHUB_TOKEN`        | ingest, web (Profile builds)  | GitHub token for the GraphQL API. Read-only public access is enough. Required                  |
+| `FAKE_PROFILE_SOURCE` | web                           | Set to `1` to replace the GitHub Profile source with a fake. Used by the Playwright smoke test |
+| `TEST_DATABASE_URL`   | ingest, profile and web tests | Test database. Defaults to `postgresql://cf:cf@localhost:5432/contribution_finder_test`        |
 
 `.env.example` lists the local defaults. `.env` is gitignored.
 

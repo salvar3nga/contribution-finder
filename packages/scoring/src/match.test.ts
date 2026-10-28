@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import { defaultScoringConfig } from './config.js';
-import { matchScore, type MatchInput } from './match.js';
-import { breakdownEntry } from './test-support.js';
+import { defaultScoringConfig } from './config';
+import { matchScore, type MatchInput } from './match';
+import { breakdownEntry } from './test-support';
 
 const { freshnessDays } = defaultScoringConfig.match;
 

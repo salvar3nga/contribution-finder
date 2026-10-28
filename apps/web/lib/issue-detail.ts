@@ -25,8 +25,13 @@ export async function findIssueDetail(
     where: { owner_name: { owner, name } },
     include: { issues: { where: { number } } },
   });
-  const issue = repo?.issues[0];
-  if (!repo || !issue) return null;
-  const { issues: _issues, ...repoFacts } = repo;
-  return { issue, repo: repoFacts, ...scoreIssue(profile, repoFacts, issue, now) };
+  if (!repo) return null;
+  const { issues, ...repoFacts } = repo;
+  const issue = issues[0];
+  if (!issue) return null;
+  return {
+    issue,
+    repo: repoFacts,
+    ...scoreIssue(profile, repoFacts, issue, now),
+  };
 }

@@ -3,7 +3,7 @@ export {
   type Profile,
   type ProfileBuilderOptions,
   type ProfileOutcome,
-} from './build-profile.js';
+} from './build-profile';
 export {
   RateLimitedError,
   type ActivityRepo,
@@ -11,9 +11,9 @@ export {
   type RateLimit,
   type TokenSource,
   type UserActivity,
-} from './github-user-client.js';
+} from './github-user-client';
 export {
   createGraphqlUserClient,
   type GraphqlUserClientOptions,
-} from './graphql-user-client.js';
-export { environmentTokenSource } from './environment-token-source.js';
+} from './graphql-user-client';
+export { environmentTokenSource } from './environment-token-source';

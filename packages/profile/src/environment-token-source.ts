@@ -1,4 +1,4 @@
-import type { TokenSource } from './github-user-client.js';
+import type { TokenSource } from './github-user-client';
 
 export function environmentTokenSource(
   environment: NodeJS.ProcessEnv = process.env,

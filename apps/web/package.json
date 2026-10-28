@@ -8,17 +8,19 @@
     "start": "next start",
     "lint": "eslint",
     "typecheck": "next typegen && tsc --noEmit",
-    "test": "vitest run --passWithNoTests"
+    "test": "vitest run --passWithNoTests",
+    "test:e2e": "playwright test"
   },
   "dependencies": {
+    "@cf/db": "workspace:*",
+    "@cf/profile": "workspace:*",
+    "@cf/scoring": "workspace:*",
     "next": "16.4.3",
     "react": "19.3.0",
-    "react-dom": "19.3.0",
-    "@cf/db": "workspace:*",
-    "@cf/scoring": "workspace:*",
-    "@cf/profile": "workspace:*"
+    "react-dom": "19.3.0"
   },
   "devDependencies": {
+    "@playwright/test": "^1.64.1",
     "@tailwindcss/turbopack": "^4",
     "@types/node": "^20",
     "@types/react": "^19",
@@ -26,6 +28,7 @@
     "eslint": "^9",
     "eslint-config-next": "16.4.3",
     "tailwindcss": "^4",
+    "tsx": "^4.23.15",
     "vitest": "^5.0.5"
   }
 }

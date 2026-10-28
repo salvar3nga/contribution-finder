@@ -3,7 +3,7 @@ import {
   RateLimitedError,
   type ActivityRepo,
   type GitHubUserClient,
-} from './github-user-client.js';
+} from './github-user-client';
 
 const hourMs = 60 * 60 * 1000;
 const activityWindowMonths = 12;

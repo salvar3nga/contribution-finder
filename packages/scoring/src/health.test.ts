@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import { defaultScoringConfig } from './config.js';
-import { healthScore, type HealthInput } from './health.js';
-import { breakdownEntry } from './test-support.js';
+import { defaultScoringConfig } from './config';
+import { healthScore, type HealthInput } from './health';
+import { breakdownEntry } from './test-support';
 
 const { responseHours, commitDays } = defaultScoringConfig.health;
 

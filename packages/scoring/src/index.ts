@@ -1,18 +1,18 @@
-export type { BreakdownEntry } from './breakdown.js';
+export type { BreakdownEntry } from './breakdown';
 export {
   defaultScoringConfig,
   type Curve,
   type ScoringConfig,
-} from './config.js';
+} from './config';
 export {
   healthScore,
   type HealthSignal,
   type HealthInput,
   type HealthResult,
-} from './health.js';
+} from './health';
 export {
   matchScore,
   type MatchComponent,
   type MatchInput,
   type MatchResult,
-} from './match.js';
+} from './match';

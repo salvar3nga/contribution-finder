@@ -41,7 +41,8 @@ export async function seedRepo(
       language: repo.language === undefined ? 'TypeScript' : repo.language,
       stars: repo.stars ?? 1000,
       topics: repo.topics ?? [],
-      lastCommitAt: repo.lastCommitAt === undefined ? daysAgo(3) : repo.lastCommitAt,
+      lastCommitAt:
+        repo.lastCommitAt === undefined ? daysAgo(3) : repo.lastCommitAt,
       medianFirstResponseHours:
         repo.medianFirstResponseHours === undefined
           ? 12

@@ -1,4 +1,4 @@
-import type { Curve } from './config.js';
+import type { Curve } from './config';
 
 export interface BreakdownEntry<Component extends string> {
   component: Component;

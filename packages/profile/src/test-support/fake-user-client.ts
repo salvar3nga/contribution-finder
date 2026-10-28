@@ -2,7 +2,7 @@ import type {
   ActivityRepo,
   GitHubUserClient,
   UserActivity,
-} from '../github-user-client.js';
+} from '../github-user-client';
 
 export function aRepo(
   id: string,

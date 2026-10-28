@@ -3,7 +3,7 @@ import {
   type ActivityRepo,
   type GitHubUserClient,
   type TokenSource,
-} from './github-user-client.js';
+} from './github-user-client';
 
 const endpoint = 'https://api.github.com/graphql';
 const pageSize = 100;

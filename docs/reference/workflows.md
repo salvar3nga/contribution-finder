@@ -2,7 +2,7 @@
 
 ## `ci.yml`
 
-Runs on pull requests and pushes to `main`. A Postgres 17 service provides the test database. Steps: install, lint, typecheck, test.
+Runs on pull requests and pushes to `main`. A Postgres 17 service provides the test database. Steps: install, lint, typecheck, test, then the Playwright smoke test (`pnpm --filter @cf/web test:e2e`) against the test database with the fake Profile source.
 
 ## `ingest.yml` (Nightly ingest)
 

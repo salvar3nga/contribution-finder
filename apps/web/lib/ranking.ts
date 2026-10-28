@@ -84,8 +84,7 @@ export function healthScoreOf(repo: Repo, now: Date): HealthResult {
 function byScoreThenRecency(a: RankedIssueRow, b: RankedIssueRow): number {
   const scoreDifference = (b.matchScore ?? -1) - (a.matchScore ?? -1);
   if (scoreDifference !== 0) return scoreDifference;
-  const recency =
-    b.lastActivityAt.getTime() - a.lastActivityAt.getTime();
+  const recency = b.lastActivityAt.getTime() - a.lastActivityAt.getTime();
   return recency !== 0 ? recency : a.issue.id.localeCompare(b.issue.id);
 }
 
@@ -142,7 +141,7 @@ export async function rankIssues(
   return {
     items: rows
       .slice(start, start + pageSize)
-      .map(({ lastActivityAt: _lastActivityAt, ...item }) => item),
+      .map(({ issue, repo, matchScore }) => ({ issue, repo, matchScore })),
     total: rows.length,
     page: currentPage,
     pageCount,

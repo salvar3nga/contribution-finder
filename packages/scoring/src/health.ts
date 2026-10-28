@@ -1,5 +1,5 @@
-import { combine, curveOrNull, type BreakdownEntry } from './breakdown.js';
-import { defaultScoringConfig, type ScoringConfig } from './config.js';
+import { combine, curveOrNull, type BreakdownEntry } from './breakdown';
+import { defaultScoringConfig, type ScoringConfig } from './config';
 
 export type HealthSignal = keyof ScoringConfig['health']['weights'];
 

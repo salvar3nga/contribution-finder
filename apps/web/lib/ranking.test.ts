@@ -1,12 +1,12 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import type { PrismaClient } from '@cf/db';
-import { rankIssues } from './ranking';
+import { rankIssues, type ScoringProfile } from './ranking';
 import { createCleanTestDb } from './test-support/database';
 import { daysAgo, seedRepo, seededNow } from './test-support/seed';
 
-const typescriptDeveloper = {
+const typescriptDeveloper: ScoringProfile = {
   languageShare: { TypeScript: 100 },
-  topics: [] as string[],
+  topics: [],
 };
 
 let db: PrismaClient;

@@ -1,5 +1,5 @@
 import { execFileSync } from 'node:child_process';
-import { testDatabaseUrl } from './database.js';
+import { testDatabaseUrl } from './database';
 
 export default function migrateTestDatabase(): void {
   execFileSync('pnpm', ['--filter', '@cf/db', 'migrate'], {

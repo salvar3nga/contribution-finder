@@ -3,8 +3,8 @@ import {
   clampScore,
   combine,
   type BreakdownEntry,
-} from './breakdown.js';
-import { defaultScoringConfig, type ScoringConfig } from './config.js';
+} from './breakdown';
+import { defaultScoringConfig, type ScoringConfig } from './config';
 
 export type MatchComponent = keyof ScoringConfig['match']['weights'];
 

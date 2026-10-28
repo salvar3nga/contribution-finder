@@ -29,6 +29,19 @@ Defined in `packages/db/prisma/schema.prisma`. Identifiers are GitHub node ids, 
 | `state`          | `open` / `closed` | `closed` once a complete fetch omits it |
 | `lastActivityAt` | datetime          |                                         |
 
+## `Profile`
+
+Cache of built Profiles, keyed by lowercased username.
+
+| Field           | Type                    | Notes                                |
+| --------------- | ----------------------- | ------------------------------------ |
+| `username`      | string, PK              | Lowercased                           |
+| `outcome`       | `profile` / `not_found` | Rate-limited outcomes are not stored |
+| `languageShare` | json?                   | Percent per language                 |
+| `topics`        | string[]                |                                      |
+| `emptyProfile`  | boolean                 |                                      |
+| `builtAt`       | datetime                | Drives expiry and the hourly cap     |
+
 ## `IngestRun`
 
 | Field                 | Type     |

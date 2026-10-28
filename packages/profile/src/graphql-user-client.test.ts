@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { createGraphqlUserClient } from './graphql-user-client.js';
-import { RateLimitedError } from './github-user-client.js';
+import { createGraphqlUserClient } from './graphql-user-client';
+import { RateLimitedError } from './github-user-client';
 import userActivity from './test-support/fixtures/user-activity.json' with { type: 'json' };
 
 const since = new Date('2025-10-28T12:00:00Z');

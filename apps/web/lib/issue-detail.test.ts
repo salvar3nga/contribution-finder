@@ -72,7 +72,9 @@ describe('Issue detail', () => {
 
     expect(detail!.health.score).toBeNull();
     expect(
-      detail!.health.breakdown.find((entry) => entry.component === 'responseTime'),
+      detail!.health.breakdown.find(
+        (entry) => entry.component === 'responseTime',
+      ),
     ).toMatchObject({ value: null, contribution: null });
     expect(
       detail!.match.breakdown.find((entry) => entry.component === 'health'),
