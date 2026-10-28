@@ -29,7 +29,7 @@ jobs:
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
       - name: Ingest (discovery runs on Sundays and manual runs)
-        run: pnpm --filter @cf/ingest start ${{ github.event.schedule == '0 3 * * 1-6' && '--skip-discovery' || '' }}
+        run: pnpm --filter @cf/ingest start --max-repos 2500 ${{ github.event.schedule == '0 3 * * 1-6' && '--skip-discovery' || '' }}
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
           GITHUB_TOKEN: ${{ secrets.INGEST_GITHUB_TOKEN }}
