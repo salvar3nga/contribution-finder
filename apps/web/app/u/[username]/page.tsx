@@ -12,6 +12,7 @@ import {
   ProfileRateLimited,
 } from '@/app/_components/profile-states';
 import { ResultsSkeleton } from '@/app/_components/results-skeleton';
+import { strengthLabels } from '@/app/_components/component-labels';
 import { formatScore } from '@/app/_components/score-label';
 
 export async function generateMetadata({
@@ -43,13 +44,6 @@ function resultsHref(username: string, language: string | null, page: number) {
   return `/u/${encodeURIComponent(username)}${suffix}`;
 }
 
-function languageSummary(languageShare: Record<string, number>): string {
-  return Object.entries(languageShare)
-    .sort(([, a], [, b]) => b - a)
-    .map(([language, share]) => `${language} ${Math.round(share)}%`)
-    .join(', ');
-}
-
 async function Results({ params, searchParams }: PageProps<'/u/[username]'>) {
   await connection();
   const { username: rawUsername } = await params;
@@ -77,7 +71,8 @@ async function Results({ params, searchParams }: PageProps<'/u/[username]'>) {
         <h1>Issues for {username}</h1>
         {!profile.emptyProfile && (
           <p className="profile-line">
-            Your last 12 months: {languageSummary(profile.languageShare)}
+            Ranked against your public activity from the last 12 months. Your
+            languages show their share.
           </p>
         )}
       </header>
@@ -86,23 +81,43 @@ async function Results({ params, searchParams }: PageProps<'/u/[username]'>) {
           No public activity found; showing top healthy issues
         </p>
       )}
-      <LanguageFilter username={username} ranking={ranking} active={language} />
+      <LanguageFilter
+        username={username}
+        ranking={ranking}
+        languageShare={profile.languageShare}
+        active={language}
+      />
       <IssueList username={username} ranking={ranking} />
       <Pagination username={username} ranking={ranking} language={language} />
     </>
   );
 }
 
+function shareOf(
+  languageShare: Record<string, number>,
+  language: string,
+): number {
+  const wanted = language.toLowerCase();
+  return Object.entries(languageShare)
+    .filter(([name]) => name.toLowerCase() === wanted)
+    .reduce((total, [, share]) => total + share, 0);
+}
+
 function LanguageFilter({
   username,
   ranking,
+  languageShare,
   active,
 }: {
   username: string;
   ranking: Ranking;
+  languageShare: Record<string, number>;
   active: string | null;
 }) {
-  const options: (string | null)[] = [null, ...ranking.languages];
+  const languages = [...ranking.languages].sort(
+    (a, b) => shareOf(languageShare, b) - shareOf(languageShare, a),
+  );
+  const options: (string | null)[] = [null, ...languages];
   return (
     <nav aria-label="Filter by language">
       <ul className="filter">
@@ -116,6 +131,11 @@ function LanguageFilter({
                 aria-current={current ? 'true' : undefined}
               >
                 {option ?? 'All languages'}
+                {option !== null && shareOf(languageShare, option) > 0 && (
+                  <span className="chip-share">
+                    {Math.round(shareOf(languageShare, option))}%
+                  </span>
+                )}
               </Link>
             </li>
           );
@@ -142,12 +162,13 @@ function IssueList({
         first
       </p>
       <ol className="issue-list">
-        {ranking.items.map(({ issue, repo, matchScore }) => (
+        {ranking.items.map(({ issue, repo, matchScore, strengths }) => (
           <li key={issue.id} className="issue-row">
             <div className="score">
               <span className="sr-only">Match score </span>
               {formatScore(matchScore)}
-              <small aria-hidden="true">Match</small>
+              <span className="sr-only"> out of 100</span>
+              <small aria-hidden="true">Match /100</small>
             </div>
             <div>
               <h2 className="issue-title">
@@ -164,11 +185,18 @@ function IssueList({
                 {repo.language && <span>{repo.language}</span>}
                 <span>
                   {repo.health === null
-                    ? 'Health: not enough data'
-                    : `Health ${formatScore(repo.health)}`}
+                    ? 'Repo health: not enough data'
+                    : `Repo health ${formatScore(repo.health)}`}
                 </span>
                 {issue.claimed && <span className="badge">Claimed</span>}
               </p>
+              {strengths.length > 0 && (
+                <ul className="strengths" aria-label="Strongest matches">
+                  {strengths.map((strength) => (
+                    <li key={strength}>{strengthLabels[strength]}</li>
+                  ))}
+                </ul>
+              )}
             </div>
           </li>
         ))}

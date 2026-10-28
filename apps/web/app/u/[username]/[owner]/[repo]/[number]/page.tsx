@@ -13,19 +13,10 @@ import {
   ProfileRateLimited,
 } from '@/app/_components/profile-states';
 import { ResultsSkeleton } from '@/app/_components/results-skeleton';
+import { componentLabels } from '@/app/_components/component-labels';
 import { formatScore } from '@/app/_components/score-label';
 
 type Props = PageProps<'/u/[username]/[owner]/[repo]/[number]'>;
-
-const componentLabels: Record<string, string> = {
-  language: 'Language overlap',
-  health: 'Repo health',
-  topics: 'Topic overlap',
-  freshness: 'Issue freshness',
-  unclaimed: 'Unclaimed',
-  responseTime: 'Maintainer response time',
-  recentCommits: 'Recent commit activity',
-};
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { owner, repo, number } = await params;

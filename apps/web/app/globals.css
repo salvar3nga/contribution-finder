@@ -259,12 +259,13 @@ h2 {
 }
 .issue-row {
   display: grid;
-  grid-template-columns: 3.5rem 1fr;
+  grid-template-columns: 4.25rem 1fr;
   gap: 1rem;
   padding: 1rem 0;
   border-bottom: 1px solid var(--line);
 }
 .score {
+  min-width: 4rem;
   font-size: 1.75rem;
   font-weight: 650;
   line-height: 1.1;
@@ -307,11 +308,83 @@ h2 {
 .badge {
   display: inline-block;
   padding: 0.05rem 0.5rem;
+  border: 1px solid var(--line-strong);
   border-radius: 4px;
-  background: var(--warning-wash);
-  color: var(--warning-ink);
+  color: var(--muted);
   font-weight: 600;
   font-size: 0.8125rem;
+}
+.strengths {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  list-style: none;
+  padding: 0;
+  margin: 0.6rem 0 0;
+}
+.strengths li {
+  padding: 0.1rem 0.6rem;
+  border-radius: 999px;
+  background: var(--accent-wash);
+  color: var(--foreground);
+  font-size: 0.8125rem;
+}
+.chip-share {
+  margin-left: 0.4rem;
+  font-size: 0.8125rem;
+  font-variant-numeric: tabular-nums;
+  opacity: 0.85;
+}
+.home-grid {
+  display: grid;
+  gap: 0;
+}
+@media (min-width: 56rem) {
+  .home-grid {
+    grid-template-columns: minmax(0, 1fr) 22rem;
+    column-gap: 4rem;
+    align-items: start;
+  }
+  .home-grid .explainer {
+    margin-top: 0.75rem;
+    padding-top: 0;
+    border-top: 0;
+  }
+}
+.explainer {
+  max-width: 34rem;
+  margin-top: 3.5rem;
+  padding-top: 2rem;
+  border-top: 1px solid var(--line);
+}
+.explainer h2 {
+  font-size: 1.25rem;
+  margin: 0 0 0.5rem;
+}
+.explainer p {
+  color: var(--muted);
+  margin: 0 0 1.25rem;
+}
+.weights {
+  margin: 0;
+}
+.weights > div {
+  display: flex;
+  justify-content: space-between;
+  padding: 0.5rem 0;
+  border-bottom: 1px solid var(--line);
+}
+.weights dt {
+  font-weight: 500;
+}
+.weights dd {
+  margin: 0;
+  font-weight: 600;
+}
+@media (max-width: 30rem) {
+  .value-bar {
+    display: none;
+  }
 }
 
 .pagination {

@@ -8,11 +8,13 @@ test('a username leads to ranked results and an Issue detail', async ({
   await page.getByRole('button', { name: 'Find issues' }).click();
 
   await expect(page).toHaveURL(/\/u\/sergio$/);
-  const rows = page.getByRole('listitem').filter({ hasText: 'Match' });
+  const rows = page
+    .getByRole('listitem')
+    .filter({ has: page.getByRole('heading', { level: 2 }) });
   await expect(rows.first()).toContainText('Fix the widget alignment');
   await expect(rows.nth(1)).toContainText('Document the config file');
   await expect(rows.nth(1)).toContainText('Claimed');
-  await expect(rows.nth(1)).toContainText('Health: not enough data');
+  await expect(rows.nth(1)).toContainText('Repo health: not enough data');
 
   await page.getByRole('link', { name: 'Fix the widget alignment' }).click();
 
@@ -30,7 +32,7 @@ test('a username leads to ranked results and an Issue detail', async ({
 
 test('the language filter narrows the list', async ({ page }) => {
   await page.goto('/u/sergio');
-  await page.getByRole('link', { name: 'Go', exact: true }).click();
+  await page.getByRole('link', { name: /^Go/ }).click();
 
   await expect(page).toHaveURL(/language=Go/);
   await expect(page.getByText('Document the config file')).toBeVisible();

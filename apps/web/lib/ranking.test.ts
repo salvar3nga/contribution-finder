@@ -175,4 +175,29 @@ describe('ranking Issues for a Profile', () => {
       'unhealthy',
     ]);
   });
+
+  it('names the components that contributed most to each Match score', async () => {
+    await seedRepo(db, { name: 'fits', topics: ['cli'] }, [
+      { title: 'fresh and open', lastActivityAt: daysAgo(1) },
+    ]);
+    await seedRepo(db, { name: 'poor-fit', language: 'Go' }, [
+      {
+        title: 'claimed elsewhere',
+        claimed: true,
+        lastActivityAt: daysAgo(400),
+      },
+    ]);
+
+    const { items } = await rank(
+      {},
+      { languageShare: { TypeScript: 100 }, topics: ['cli'] },
+    );
+    const fits = items.find((item) => item.issue.title === 'fresh and open')!;
+    const poorFit = items.find(
+      (item) => item.issue.title === 'claimed elsewhere',
+    )!;
+
+    expect(fits.strengths).toEqual(['language', 'health', 'topics']);
+    expect(poorFit.strengths).toEqual(['health']);
+  });
 });

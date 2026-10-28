@@ -3,6 +3,7 @@ import {
   healthScore,
   matchScore,
   type HealthResult,
+  type MatchComponent,
   type MatchInput,
   type MatchResult,
 } from '@cf/scoring';
@@ -21,6 +22,7 @@ export interface RankedIssue {
     health: number | null;
   };
   matchScore: number | null;
+  strengths: MatchComponent[];
 }
 
 export interface RankingOptions {
@@ -81,6 +83,16 @@ export function healthScoreOf(repo: Repo, now: Date): HealthResult {
   });
 }
 
+const strengthCount = 3;
+
+function strengthsOf(match: MatchResult): MatchComponent[] {
+  return match.breakdown
+    .filter((entry) => (entry.contribution ?? 0) > 0)
+    .sort((a, b) => b.contribution! - a.contribution!)
+    .slice(0, strengthCount)
+    .map((entry) => entry.component);
+}
+
 function byScoreThenRecency(a: RankedIssueRow, b: RankedIssueRow): number {
   const scoreDifference = (b.matchScore ?? -1) - (a.matchScore ?? -1);
   if (scoreDifference !== 0) return scoreDifference;
@@ -119,22 +131,26 @@ export function rankIssues(
     )
     .flatMap((repo) => {
       const health = healthScoreOf(repo, now);
-      return repo.issues.map((issue) => ({
-        issue: {
-          id: issue.id,
-          number: issue.number,
-          title: issue.title,
-          claimed: issue.claimed,
-        },
-        repo: {
-          owner: repo.owner,
-          name: repo.name,
-          language: repo.language,
-          health: health.score,
-        },
-        matchScore: scoreIssue(profile, repo, issue, now, health).match.score,
-        lastActivityAt: issue.lastActivityAt,
-      }));
+      return repo.issues.map((issue) => {
+        const { match } = scoreIssue(profile, repo, issue, now, health);
+        return {
+          issue: {
+            id: issue.id,
+            number: issue.number,
+            title: issue.title,
+            claimed: issue.claimed,
+          },
+          repo: {
+            owner: repo.owner,
+            name: repo.name,
+            language: repo.language,
+            health: health.score,
+          },
+          matchScore: match.score,
+          strengths: strengthsOf(match),
+          lastActivityAt: issue.lastActivityAt,
+        };
+      });
     })
     .sort(byScoreThenRecency);
 
@@ -145,7 +161,12 @@ export function rankIssues(
   return {
     items: rows
       .slice(start, start + pageSize)
-      .map(({ issue, repo, matchScore }) => ({ issue, repo, matchScore })),
+      .map(({ issue, repo, matchScore, strengths }) => ({
+        issue,
+        repo,
+        matchScore,
+        strengths,
+      })),
     total: rows.length,
     page: currentPage,
     pageCount,
