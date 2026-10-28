@@ -58,3 +58,14 @@ test('not found, rate-limited and error states link back to Home', async ({
     await expect(page).toHaveURL('/');
   }
 });
+
+test('a username GitHub could not have issued is a plain not-found page', async ({
+  page,
+}) => {
+  for (const path of ['/u/foo%20is%3Aissue', '/u/-leading']) {
+    await page.goto(path);
+    await expect(
+      page.getByRole('heading', { name: 'Page not found' }),
+    ).toBeVisible();
+  }
+});

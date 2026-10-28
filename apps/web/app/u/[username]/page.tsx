@@ -2,7 +2,9 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { connection } from 'next/server';
 import { Suspense } from 'react';
-import { getDb } from '@/lib/db';
+import { notFound } from 'next/navigation';
+import { getActiveRepos } from '@/lib/active-repos';
+import { usernameFromParam } from '@/lib/username';
 import { getProfileOutcome } from '@/lib/profile-source';
 import { rankIssues, type Ranking } from '@/lib/ranking';
 import {
@@ -16,7 +18,9 @@ export async function generateMetadata({
   params,
 }: PageProps<'/u/[username]'>): Promise<Metadata> {
   const { username } = await params;
-  return { title: `Issues for ${decodeURIComponent(username)}` };
+  return {
+    title: `Issues for ${usernameFromParam(username) ?? 'unknown user'}`,
+  };
 }
 
 export default function ResultsPage(props: PageProps<'/u/[username]'>) {
@@ -49,7 +53,8 @@ function languageSummary(languageShare: Record<string, number>): string {
 async function Results({ params, searchParams }: PageProps<'/u/[username]'>) {
   await connection();
   const { username: rawUsername } = await params;
-  const username = decodeURIComponent(rawUsername);
+  const username = usernameFromParam(rawUsername);
+  if (username === null) notFound();
   const query = await searchParams;
   const language = firstValue(query.language);
   const page = Number.parseInt(firstValue(query.page) ?? '1', 10) || 1;
@@ -60,7 +65,7 @@ async function Results({ params, searchParams }: PageProps<'/u/[username]'>) {
   if (outcome.kind === 'rate-limited') return <ProfileRateLimited />;
 
   const { profile } = outcome;
-  const ranking = await rankIssues(getDb(), profile, {
+  const ranking = rankIssues(await getActiveRepos(), profile, {
     language,
     page,
     now: new Date(),
@@ -132,19 +137,17 @@ function IssueList({
   }
   return (
     <>
-      <p className="result-count" aria-live="polite">
+      <p className="result-count">
         {ranking.total} {ranking.total === 1 ? 'Issue' : 'Issues'}, best match
         first
       </p>
       <ol className="issue-list">
         {ranking.items.map(({ issue, repo, matchScore }) => (
           <li key={issue.id} className="issue-row">
-            <div
-              className="score"
-              aria-label={`Match score ${formatScore(matchScore)}`}
-            >
+            <div className="score">
+              <span className="sr-only">Match score </span>
               {formatScore(matchScore)}
-              <small>Match</small>
+              <small aria-hidden="true">Match</small>
             </div>
             <div>
               <h2 className="issue-title">

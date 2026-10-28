@@ -36,7 +36,6 @@
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 }
 
@@ -112,6 +111,9 @@ h2 {
   min-height: 3.5rem;
 }
 .wordmark {
+  display: inline-flex;
+  align-items: center;
+  min-height: 2.75rem;
   font-weight: 650;
   letter-spacing: -0.01em;
   text-decoration: none;
@@ -184,6 +186,9 @@ h2 {
 .button:hover {
   filter: brightness(1.12);
 }
+.button:active {
+  filter: brightness(0.92);
+}
 .button:disabled {
   opacity: 0.6;
   cursor: progress;
@@ -225,7 +230,7 @@ h2 {
 .filter a {
   display: inline-flex;
   align-items: center;
-  min-height: 2.5rem;
+  min-height: 2.75rem;
   padding: 0 0.85rem;
   border: 1px solid var(--line-strong);
   border-radius: 999px;
@@ -278,6 +283,9 @@ h2 {
   margin: 0 0 0.25rem;
 }
 .issue-title a {
+  display: inline-block;
+  padding-block: 0.75rem;
+  margin-block: -0.75rem;
   text-decoration: none;
 }
 .issue-title a:hover {
@@ -350,6 +358,9 @@ h2 {
 
 .table-wrap {
   overflow-x: auto;
+}
+.table-wrap:focus-visible {
+  outline-offset: 4px;
 }
 .breakdown {
   width: 100%;

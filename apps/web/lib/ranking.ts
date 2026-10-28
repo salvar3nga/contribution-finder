@@ -1,4 +1,4 @@
-import type { PrismaClient, Repo } from '@cf/db';
+import type { Issue, PrismaClient, Repo } from '@cf/db';
 import {
   healthScore,
   matchScore,
@@ -92,16 +92,20 @@ interface RankedIssueRow extends RankedIssue {
   lastActivityAt: Date;
 }
 
-export async function rankIssues(
-  db: PrismaClient,
-  profile: ScoringProfile,
-  { language, page, now }: RankingOptions,
-): Promise<Ranking> {
-  const repos = await db.repo.findMany({
+export type ActiveRepo = Repo & { issues: Issue[] };
+
+export function loadActiveRepos(db: PrismaClient): Promise<ActiveRepo[]> {
+  return db.repo.findMany({
     where: { active: true },
     include: { issues: { where: { state: 'open' } } },
   });
+}
 
+export function rankIssues(
+  repos: ActiveRepo[],
+  profile: ScoringProfile,
+  { language, page, now }: RankingOptions,
+): Ranking {
   const languages = [
     ...new Set(
       repos.flatMap((repo) => (repo.language === null ? [] : [repo.language])),

@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import type { PrismaClient } from '@cf/db';
-import { rankIssues, type ScoringProfile } from './ranking';
+import { loadActiveRepos, rankIssues, type ScoringProfile } from './ranking';
 import { createCleanTestDb } from './test-support/database';
 import { daysAgo, seedRepo, seededNow } from './test-support/seed';
 
@@ -15,11 +15,11 @@ beforeEach(async () => {
   db = await createCleanTestDb();
 });
 
-function rank(
+async function rank(
   options: { language?: string | null; page?: number } = {},
   profile = typescriptDeveloper,
 ) {
-  return rankIssues(db, profile, {
+  return rankIssues(await loadActiveRepos(db), profile, {
     language: options.language ?? null,
     page: options.page ?? 1,
     now: seededNow,

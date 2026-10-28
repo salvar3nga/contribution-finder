@@ -5,6 +5,7 @@ import { connection } from 'next/server';
 import { Suspense } from 'react';
 import type { BreakdownEntry } from '@cf/scoring';
 import { getDb } from '@/lib/db';
+import { decodeParam, usernameFromParam } from '@/lib/username';
 import { findIssueDetail } from '@/lib/issue-detail';
 import { getProfileOutcome } from '@/lib/profile-source';
 import {
@@ -60,11 +61,18 @@ async function IssueDetail({ params }: Props) {
     repo: rawRepo,
     number: rawNumber,
   } = await params;
-  const username = decodeURIComponent(rawUsername);
-  const owner = decodeURIComponent(rawOwner);
-  const repoName = decodeURIComponent(rawRepo);
+  const username = usernameFromParam(rawUsername);
+  const owner = decodeParam(rawOwner);
+  const repoName = decodeParam(rawRepo);
+  if (
+    username === null ||
+    owner === null ||
+    repoName === null ||
+    !/^\d+$/.test(rawNumber)
+  ) {
+    notFound();
+  }
   const number = Number.parseInt(rawNumber, 10);
-  if (!Number.isInteger(number)) notFound();
 
   const outcome = await getProfileOutcome(username);
   if (outcome.kind === 'not-found')
@@ -174,7 +182,7 @@ function Breakdown({
   noData: React.ReactNode;
 }) {
   return (
-    <div className="table-wrap">
+    <div className="table-wrap" tabIndex={0} role="region" aria-label={caption}>
       <table className="breakdown">
         <caption>{caption}</caption>
         <thead>
