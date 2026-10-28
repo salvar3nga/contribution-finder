@@ -13,6 +13,8 @@ export interface IngestConfig {
   maxRecentItems: number;
   minItemsForResponseTime: number;
   maxErrorRate: number;
+  concurrency: number;
+  transactionTimeoutMs: number;
 }
 
 export const defaultIngestConfig: IngestConfig = {
@@ -40,4 +42,6 @@ export const defaultIngestConfig: IngestConfig = {
   maxRecentItems: 50,
   minItemsForResponseTime: 5,
   maxErrorRate: 0.1,
+  concurrency: 5,
+  transactionTimeoutMs: 60_000,
 };

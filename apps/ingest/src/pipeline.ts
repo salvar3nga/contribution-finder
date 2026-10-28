@@ -141,45 +141,48 @@ async function refreshRepo(
   const eligible = activity.openIssues.filter((issue) =>
     isEligible(issue, config),
   );
-  await db.$transaction(async (tx) => {
-    await tx.repo.update({
-      where: { id: repo.id },
-      data: {
-        active: eligible.length > 0,
-        ingestedAt: now,
-        medianFirstResponseHours: medianFirstResponseHours(
-          activity.recentItems,
-          config,
-        ),
-      },
-    });
-    for (const issue of eligible) {
-      const fields = {
-        number: issue.number,
-        title: issue.title,
-        url: issue.url,
-        labels: issue.labels,
-        claimed: issue.assigneeCount > 0 || issue.openLinkedPrCount > 0,
-        state: IssueState.open,
-        lastActivityAt: issue.lastActivityAt,
-      };
-      await tx.issue.upsert({
-        where: { id: issue.id },
-        create: { id: issue.id, repoId: repo.id, ...fields },
-        update: fields,
-      });
-    }
-    if (activity.complete) {
-      await tx.issue.updateMany({
-        where: {
-          repoId: repo.id,
-          state: IssueState.open,
-          id: { notIn: eligible.map((issue) => issue.id) },
+  await db.$transaction(
+    async (tx) => {
+      await tx.repo.update({
+        where: { id: repo.id },
+        data: {
+          active: eligible.length > 0,
+          ingestedAt: now,
+          medianFirstResponseHours: medianFirstResponseHours(
+            activity.recentItems,
+            config,
+          ),
         },
-        data: { state: IssueState.closed },
       });
-    }
-  });
+      for (const issue of eligible) {
+        const fields = {
+          number: issue.number,
+          title: issue.title,
+          url: issue.url,
+          labels: issue.labels,
+          claimed: issue.assigneeCount > 0 || issue.openLinkedPrCount > 0,
+          state: IssueState.open,
+          lastActivityAt: issue.lastActivityAt,
+        };
+        await tx.issue.upsert({
+          where: { id: issue.id },
+          create: { id: issue.id, repoId: repo.id, ...fields },
+          update: fields,
+        });
+      }
+      if (activity.complete) {
+        await tx.issue.updateMany({
+          where: {
+            repoId: repo.id,
+            state: IssueState.open,
+            id: { notIn: eligible.map((issue) => issue.id) },
+          },
+          data: { state: IssueState.closed },
+        });
+      }
+    },
+    { timeout: config.transactionTimeoutMs },
+  );
   return { issuesIngested: eligible.length, rateLimit };
 }
 
@@ -224,24 +227,28 @@ export async function runIngest(
         ],
         take: maxRepos,
       });
-  for (const repo of repos) {
-    summary.attemptedRepos += 1;
-    try {
-      const result = await refreshRepo(options, repo);
-      summary.reposIngested += 1;
-      summary.issuesIngested += result.issuesIngested;
-      if (summary.attemptedRepos % 100 === 0) {
-        log(`Refreshed ${summary.attemptedRepos} of ${repos.length} repos`);
+  let nextIndex = 0;
+  const worker = async (): Promise<void> => {
+    while (!state.stoppedForRateLimit && nextIndex < repos.length) {
+      const repo = repos[nextIndex++]!;
+      summary.attemptedRepos += 1;
+      try {
+        const result = await refreshRepo(options, repo);
+        summary.reposIngested += 1;
+        summary.issuesIngested += result.issuesIngested;
+        if (summary.attemptedRepos % 100 === 0) {
+          log(`Refreshed ${summary.attemptedRepos} of ${repos.length} repos`);
+        }
+        if (belowFloor(result.rateLimit, config)) {
+          state.stoppedForRateLimit = true;
+        }
+      } catch (error) {
+        summary.errors += 1;
+        log(`Failed to ingest ${repo.owner}/${repo.name}: ${String(error)}`);
       }
-      if (belowFloor(result.rateLimit, config)) {
-        state.stoppedForRateLimit = true;
-        break;
-      }
-    } catch (error) {
-      summary.errors += 1;
-      log(`Failed to ingest ${repo.owner}/${repo.name}: ${String(error)}`);
     }
-  }
+  };
+  await Promise.all(Array.from({ length: config.concurrency }, () => worker()));
   summary.stoppedForRateLimit = state.stoppedForRateLimit;
   summary.durationMs = Date.now() - startedAtMs;
   await db.ingestRun.create({

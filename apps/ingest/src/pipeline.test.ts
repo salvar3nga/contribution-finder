@@ -17,6 +17,7 @@ const oneSliceConfig = {
   languages: ['TypeScript'],
   starBands: [{ minStars: 500, maxStars: null }],
   discoveryIssueQualifiers: ['good-first-issues'],
+  concurrency: 1,
 };
 
 let db: PrismaClient;
@@ -299,6 +300,24 @@ describe('closing issues', () => {
 
     const states = (await db.issue.findMany()).map((issue) => issue.state);
     expect(states).toEqual(['open', 'open']);
+  });
+});
+
+describe('concurrency', () => {
+  it('ingests every repo exactly once when refreshing in parallel', async () => {
+    const names = ['alpha', 'bravo', 'charlie', 'delta', 'echo'];
+    const client = fakeGitHub({ repos: names.map((name) => aRepo(name)) });
+
+    const summary = await runIngest({
+      client,
+      db,
+      config: { ...oneSliceConfig, concurrency: 3 },
+      now,
+      log: () => {},
+    });
+
+    expect(client.fetchedRepoNames.sort()).toEqual(names);
+    expect(summary).toMatchObject({ reposIngested: 5, errors: 0 });
   });
 });
 
