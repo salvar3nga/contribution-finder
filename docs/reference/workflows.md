@@ -6,11 +6,11 @@ Runs on pull requests and pushes to `main`. A Postgres 17 service provides the t
 
 ## `ingest.yml` (Nightly ingest)
 
-| Trigger                          | Mode                      |
-| -------------------------------- | ------------------------- |
-| `0 3 * * 0` (Sundays, UTC)       | discovery and refresh     |
-| `0 3 * * 1-6` (other days, UTC)  | refresh only              |
-| Manual (`workflow_dispatch`)     | discovery and refresh     |
+| Trigger                         | Mode                  |
+| ------------------------------- | --------------------- |
+| `0 3 * * 0` (Sundays, UTC)      | discovery and refresh |
+| `0 3 * * 1-6` (other days, UTC) | refresh only          |
+| Manual (`workflow_dispatch`)    | discovery and refresh |
 
 Settings: 120 minute timeout; a `concurrency` group so two ingests never overlap, without cancelling a running one.
 

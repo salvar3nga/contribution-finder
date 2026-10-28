@@ -12,6 +12,7 @@ export interface SearchSlice {
   language: string;
   minStars: number;
   maxStars: number | null;
+  issueQualifier: string;
 }
 
 export interface DiscoveredRepo {
@@ -47,16 +48,10 @@ export interface RecentItem {
   firstResponseAt: Date | null;
 }
 
-export interface RecentPullRequest {
-  authorAssociation: string;
-  state: 'OPEN' | 'CLOSED' | 'MERGED';
-}
-
 export interface RepoActivity {
   complete: boolean;
   openIssues: RepoIssue[];
   recentItems: RecentItem[];
-  recentPullRequests: RecentPullRequest[];
 }
 
 export interface RepoRef {

@@ -7,12 +7,10 @@ export interface ScoringConfig {
   health: {
     weights: {
       responseTime: number;
-      firstTimeMergeRate: number;
       recentCommits: number;
     };
     responseHours: Curve;
     commitDays: Curve;
-    minFirstTimePrs: number;
     minSignalsWithData: number;
   };
   match: {
@@ -29,10 +27,9 @@ export interface ScoringConfig {
 
 export const defaultScoringConfig: ScoringConfig = {
   health: {
-    weights: { responseTime: 0.4, firstTimeMergeRate: 0.4, recentCommits: 0.2 },
+    weights: { responseTime: 0.6, recentCommits: 0.4 },
     responseHours: { full: 24, zero: 14 * 24 },
     commitDays: { full: 7, zero: 90 },
-    minFirstTimePrs: 3,
     minSignalsWithData: 2,
   },
   match: {

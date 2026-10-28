@@ -16,6 +16,7 @@ const oneSliceConfig = {
   ...defaultIngestConfig,
   languages: ['TypeScript'],
   starBands: [{ minStars: 500, maxStars: null }],
+  discoveryIssueQualifiers: ['good-first-issues'],
 };
 
 let db: PrismaClient;
@@ -111,6 +112,26 @@ describe('storing repos and issues', () => {
     expect(refreshOnly.searchedSlices).toEqual([]);
     expect(refreshOnly.fetchedRepoNames).toEqual(['alpha']);
     expect(summary.reposIngested).toBe(1);
+  });
+
+  it('searches each slice once per issue qualifier', async () => {
+    const client = fakeGitHub({ repos: [aRepo('alpha')] });
+
+    await runIngest({
+      client,
+      db,
+      config: {
+        ...oneSliceConfig,
+        discoveryIssueQualifiers: ['good-first-issues', 'help-wanted-issues'],
+      },
+      now,
+      log: () => {},
+    });
+
+    expect(client.searchedSlices.map((slice) => slice.issueQualifier)).toEqual([
+      'good-first-issues',
+      'help-wanted-issues',
+    ]);
   });
 
   it('stores a repo found in two slices once', async () => {
@@ -228,29 +249,6 @@ describe('health inputs', () => {
     await ingest(client);
 
     expect((await storedAlpha()).medianFirstResponseHours).toBeNull();
-  });
-
-  it('counts first-time-contributor PRs only when closed or merged', async () => {
-    const client = fakeGitHub({
-      repos: [aRepo('alpha')],
-      activity: {
-        alpha: anActivity({
-          recentPullRequests: [
-            { authorAssociation: 'FIRST_TIME_CONTRIBUTOR', state: 'MERGED' },
-            { authorAssociation: 'FIRST_TIMER', state: 'CLOSED' },
-            { authorAssociation: 'FIRST_TIMER', state: 'OPEN' },
-            { authorAssociation: 'MEMBER', state: 'MERGED' },
-          ],
-        }),
-      },
-    });
-
-    await ingest(client);
-
-    expect(await storedAlpha()).toMatchObject({
-      firstTimePrsTotal: 2,
-      firstTimePrsMerged: 1,
-    });
   });
 
   it('stores the last commit date of the default branch', async () => {

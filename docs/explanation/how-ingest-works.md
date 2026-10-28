@@ -4,17 +4,18 @@ The ingest copies a slice of GitHub into Postgres, so the web app never has to c
 
 ## Discovery
 
-GitHub search returns at most 1,000 results per query. To reach 2–5k Repos, discovery slices the search by language and star band and follows pagination within each slice. Forks and archived Repos are excluded. Repos are keyed by GitHub id, so one found in two slices is stored once.
+GitHub search returns at most 1,000 results per query. To reach every in-scope Repo, discovery slices the search by language and star band and follows pagination within each slice. Forks and archived Repos are excluded. Repos are keyed by GitHub id, so one found in two slices is stored once.
 
-Discovery is expensive: about 1,600 requests for the default scope, a large part of a day's rate-limit budget. It therefore runs weekly. The other nights spend the whole budget on refresh.
+Each slice is also restricted to Repos with at least one open `good first issue` or `help wanted` Issue, using GitHub's `good-first-issues:>0` and `help-wanted-issues:>0` search qualifiers. Without them the search matches over 30,000 Repos, most of which have nothing to offer. Each slice is searched once per qualifier, and a Repo found by both is stored once.
+
+Discovery is still the expensive phase, so it runs weekly. The other nights spend the whole budget on refresh.
 
 ## Refresh
 
 For each stored Repo, oldest ingestion first (never-ingested Repos before all others), the ingest fetches:
 
 - open Issues labelled `good first issue` or `help wanted`,
-- up to 50 recent Issues and PRs, to measure how fast maintainers respond,
-- PRs from the last 90 days, to count first-time contributors' PRs.
+- up to 50 recent Issues and PRs (about half each), to measure how fast maintainers respond.
 
 A Repo with no open eligible Issue is marked inactive, not deleted: it can become active again after a later refresh.
 
@@ -28,19 +29,18 @@ Every GraphQL response reports `rateLimit { remaining }`. When it drops below th
 
 ## When Issues are marked closed
 
-An Issue is marked `closed` only when a *complete* fetch of its Repo no longer returns it. If the fetch was cut short by the rate limit, nothing is marked closed, because a missing Issue could just be one we did not reach.
+An Issue is marked `closed` only when a _complete_ fetch of its Repo no longer returns it. If the fetch was cut short by the rate limit, nothing is marked closed, because a missing Issue could just be one we did not reach.
 
 An Issue also stops being returned when its eligible label is removed, so it is closed in that case too.
 
 ## What is stored, and why only raw inputs
 
-Health inputs are stored as raw values: median first-response hours, first-time PR counts, last commit date. The Health score is computed at query time from those, so changing the Scoring config needs no re-ingest.
+Health inputs are stored as raw values: median first-response hours and last commit date. The Health score is computed at query time from those, so changing the Scoring config needs no re-ingest.
 
 ## Definitions worth knowing
 
 - **Claimed**: the Issue has an assignee, or an open pull request that would close it. Comments are not parsed.
 - **Median first response**: over sampled Issues and PRs that received a response from someone other than the author. With fewer than five of them there is no value (`null`).
-- **First-time PRs**: only closed or merged PRs count, so open ones cannot drag the merge rate down.
 
 ## Failure handling
 

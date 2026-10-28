@@ -2,7 +2,6 @@ import type {
   GitHubClient,
   RateLimit,
   RecentItem,
-  RecentPullRequest,
   RepoActivity,
   RepoIssue,
   SearchSlice,
@@ -14,7 +13,6 @@ const repoSearchPageSize = 25;
 const maxRequestAttempts = 4;
 const defaultRetryDelayMs = 2000;
 const recentItemsPageSize = 50;
-const maxPullRequestPages = 10;
 
 export interface GraphqlClientOptions {
   token: string;
@@ -72,11 +70,6 @@ interface RawRecentItem extends RawAuthored {
   reviews?: { nodes: (RawAuthored & { createdAt: string })[] };
 }
 
-interface RawPullRequest {
-  authorAssociation: string;
-  state: 'OPEN' | 'CLOSED' | 'MERGED';
-}
-
 const rateLimitFragment = 'rateLimit { remaining resetAt }';
 const pageInfoFragment = 'pageInfo { hasNextPage endCursor }';
 
@@ -122,9 +115,9 @@ query($query: String!, $cursor: String) {
 }`;
 
 const recentItemsQuery = `
-query($query: String!) {
+query($query: String!, $first: Int!) {
   ${rateLimitFragment}
-  search(query: $query, type: ISSUE, first: ${recentItemsPageSize}) {
+  search(query: $query, type: ISSUE, first: $first) {
     nodes {
       ... on Issue {
         createdAt
@@ -141,23 +134,12 @@ query($query: String!) {
   }
 }`;
 
-const pullRequestsQuery = `
-query($query: String!, $cursor: String) {
-  ${rateLimitFragment}
-  search(query: $query, type: ISSUE, first: ${searchPageSize}, after: $cursor) {
-    ${pageInfoFragment}
-    nodes {
-      ... on PullRequest { authorAssociation state }
-    }
-  }
-}`;
-
 function searchQualifier(slice: SearchSlice): string {
   const stars =
     slice.maxStars === null
       ? `>=${slice.minStars}`
       : `${slice.minStars}..${slice.maxStars}`;
-  return `language:"${slice.language}" stars:${stars} fork:false archived:false sort:stars-desc`;
+  return `language:"${slice.language}" stars:${stars} fork:false archived:false ${slice.issueQualifier}:>0 sort:stars-desc`;
 }
 
 function present<Node extends object>(nodes: (Node | null)[]): Node[] {
@@ -239,11 +221,10 @@ export function createGraphqlGitHubClient(
   async function collectPages<Node extends object>(
     query: string,
     searchString: string,
-    maxPages: number,
   ): Promise<{ nodes: Node[]; complete: boolean; rateLimit: RateLimit }> {
     const nodes: Node[] = [];
     let cursor: string | null = null;
-    for (let pageNumber = 1; ; pageNumber += 1) {
+    for (;;) {
       const response: {
         data: { rateLimit: RawRateLimit; search: Page<Node> };
         rateLimit: RateLimit;
@@ -256,11 +237,22 @@ export function createGraphqlGitHubClient(
       if (!data.search.pageInfo.hasNextPage) {
         return { nodes, complete: true, rateLimit };
       }
-      if (rateLimit.remaining < rateLimitFloor || pageNumber >= maxPages) {
+      if (rateLimit.remaining < rateLimitFloor) {
         return { nodes, complete: false, rateLimit };
       }
       cursor = data.search.pageInfo.endCursor;
     }
+  }
+
+  async function fetchRecentItems(
+    searchString: string,
+    first: number,
+  ): Promise<{ items: RawRecentItem[]; rateLimit: RateLimit }> {
+    const { data, rateLimit } = await request<{
+      rateLimit: RawRateLimit;
+      search: { nodes: (RawRecentItem | null)[] };
+    }>(recentItemsQuery, { query: searchString, first });
+    return { items: present(data.search.nodes), rateLimit };
   }
 
   return {
@@ -302,25 +294,21 @@ export function createGraphqlGitHubClient(
         const result = await collectPages<RawIssue>(
           issuesQuery,
           `${scope} is:issue is:open label:"${label}"`,
-          Number.POSITIVE_INFINITY,
         );
         result.nodes.forEach((raw) => rawIssues.set(raw.id, raw));
         complete = complete && result.complete;
         if (!result.complete) break;
       }
 
-      const recent = await request<{
-        rateLimit: RawRateLimit;
-        search: { nodes: (RawRecentItem | null)[] };
-      }>(recentItemsQuery, {
-        query: `${scope} created:>=${sinceDay} sort:created-desc`,
-      });
-      const pullRequests = await collectPages<RawPullRequest>(
-        pullRequestsQuery,
-        `${scope} is:pr created:>=${sinceDay}`,
-        maxPullRequestPages,
+      const issueSampleSize = Math.ceil(maxRecentItems / 2);
+      const recentIssues = await fetchRecentItems(
+        `${scope} is:issue created:>=${sinceDay} sort:created-desc`,
+        issueSampleSize,
       );
-
+      const recentPullRequests = await fetchRecentItems(
+        `${scope} is:pr created:>=${sinceDay} sort:created-desc`,
+        maxRecentItems - issueSampleSize,
+      );
       const openIssues: RepoIssue[] = [...rawIssues.values()].map((raw) => ({
         id: raw.id,
         number: raw.number,
@@ -331,25 +319,19 @@ export function createGraphqlGitHubClient(
         openLinkedPrCount: raw.closedByPullRequestsReferences?.totalCount ?? 0,
         lastActivityAt: new Date(raw.updatedAt),
       }));
-      const recentItems: RecentItem[] = present(recent.data.search.nodes)
-        .slice(0, maxRecentItems)
-        .map((raw) => ({
-          createdAt: new Date(raw.createdAt),
-          firstResponseAt: firstResponseAt(raw),
-        }));
-      const recentPullRequests: RecentPullRequest[] = pullRequests.nodes.map(
-        (raw) => ({
-          authorAssociation: raw.authorAssociation,
-          state: raw.state,
-        }),
-      );
+      const recentItems: RecentItem[] = [
+        ...recentIssues.items,
+        ...recentPullRequests.items,
+      ].map((raw) => ({
+        createdAt: new Date(raw.createdAt),
+        firstResponseAt: firstResponseAt(raw),
+      }));
       const value: RepoActivity = {
         complete,
         openIssues,
         recentItems,
-        recentPullRequests,
       };
-      return { value, rateLimit: pullRequests.rateLimit };
+      return { value, rateLimit: recentPullRequests.rateLimit };
     },
   };
 }

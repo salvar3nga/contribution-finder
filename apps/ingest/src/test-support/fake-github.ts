@@ -51,7 +51,6 @@ export function anActivity(
     complete: true,
     openIssues: [anIssue('1')],
     recentItems: [],
-    recentPullRequests: [],
     ...overrides,
   };
 }
@@ -89,7 +88,8 @@ export function fakeGitHub({
       const firstSlice = fake.searchedSlices[0]!;
       const isFirstSlice =
         firstSlice.language === slice.language &&
-        firstSlice.minStars === slice.minStars;
+        firstSlice.minStars === slice.minStars &&
+        firstSlice.issueQualifier === slice.issueQualifier;
       const end = start + searchPageSize;
       return {
         value: {

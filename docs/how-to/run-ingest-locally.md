@@ -20,7 +20,7 @@ pnpm --filter @cf/ingest exec tsx --env-file=../../.env src/main.ts --max-repos 
 pnpm --filter @cf/ingest exec tsx --env-file=../../.env src/main.ts --skip-discovery
 ```
 
-This refreshes the Repos already in the database, oldest first, and skips the roughly 1,600 search requests discovery makes.
+This refreshes the Repos already in the database, oldest first, and skips the search requests discovery makes.
 
 ## Run a full ingest
 

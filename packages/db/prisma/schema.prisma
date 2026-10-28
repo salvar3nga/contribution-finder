@@ -21,8 +21,6 @@ model Repo {
   topics                  String[]
   lastCommitAt            DateTime?
   medianFirstResponseHours Float?
-  firstTimePrsTotal       Int       @default(0)
-  firstTimePrsMerged      Int       @default(0)
   active                  Boolean   @default(false)
   ingestedAt              DateTime?
   issues                  Issue[]

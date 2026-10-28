@@ -7,11 +7,11 @@ export interface IngestConfig {
   languages: string[];
   starBands: StarBand[];
   eligibleLabels: string[];
+  discoveryIssueQualifiers: string[];
   rateLimitFloor: number;
   activityWindowDays: number;
   maxRecentItems: number;
   minItemsForResponseTime: number;
-  firstTimeAssociations: string[];
   maxErrorRate: number;
 }
 
@@ -34,10 +34,10 @@ export const defaultIngestConfig: IngestConfig = {
     { minStars: 5000, maxStars: null },
   ],
   eligibleLabels: ['good first issue', 'help wanted'],
+  discoveryIssueQualifiers: ['good-first-issues', 'help-wanted-issues'],
   rateLimitFloor: 200,
   activityWindowDays: 90,
   maxRecentItems: 50,
   minItemsForResponseTime: 5,
-  firstTimeAssociations: ['FIRST_TIME_CONTRIBUTOR', 'FIRST_TIMER'],
   maxErrorRate: 0.1,
 };

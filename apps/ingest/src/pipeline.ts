@@ -5,7 +5,6 @@ import type {
   GitHubClient,
   RateLimit,
   RecentItem,
-  RecentPullRequest,
   RepoIssue,
 } from './github-client.js';
 
@@ -55,24 +54,26 @@ async function discoverRepos(
   let discovered = 0;
   for (const language of config.languages) {
     for (const band of config.starBands) {
-      let cursor: string | null = null;
-      do {
-        if (state.stoppedForRateLimit) return;
-        if (maxRepos !== undefined && discovered >= maxRepos) return;
-        const { value, rateLimit } = await client.searchRepos(
-          { language, ...band },
-          cursor,
-        );
-        for (const repo of value.repos.filter(isInScope)) {
-          await upsertDiscovered(db, repo);
-          discovered += 1;
-        }
-        state.stoppedForRateLimit = belowFloor(rateLimit, config);
-        log(
-          `Discovery ${language} ${band.minStars}+ stars: ${discovered} repos found so far`,
-        );
-        cursor = value.nextCursor;
-      } while (cursor !== null);
+      for (const issueQualifier of config.discoveryIssueQualifiers) {
+        let cursor: string | null = null;
+        do {
+          if (state.stoppedForRateLimit) return;
+          if (maxRepos !== undefined && discovered >= maxRepos) return;
+          const { value, rateLimit } = await client.searchRepos(
+            { language, ...band, issueQualifier },
+            cursor,
+          );
+          for (const repo of value.repos.filter(isInScope)) {
+            await upsertDiscovered(db, repo);
+            discovered += 1;
+          }
+          state.stoppedForRateLimit = belowFloor(rateLimit, config);
+          log(
+            `Discovery ${language} ${band.minStars}+ stars (${issueQualifier}): ${discovered} repos found so far`,
+          );
+          cursor = value.nextCursor;
+        } while (cursor !== null);
+      }
     }
   }
 }
@@ -125,21 +126,6 @@ function medianFirstResponseHours(
     : median(responseHours);
 }
 
-function firstTimePrCounts(
-  pullRequests: RecentPullRequest[],
-  config: IngestConfig,
-): { total: number; merged: number } {
-  const settled = pullRequests.filter(
-    (pr) =>
-      config.firstTimeAssociations.includes(pr.authorAssociation) &&
-      pr.state !== 'OPEN',
-  );
-  return {
-    total: settled.length,
-    merged: settled.filter((pr) => pr.state === 'MERGED').length,
-  };
-}
-
 async function refreshRepo(
   options: IngestOptions,
   repo: { id: string; owner: string; name: string },
@@ -155,7 +141,6 @@ async function refreshRepo(
   const eligible = activity.openIssues.filter((issue) =>
     isEligible(issue, config),
   );
-  const firstTimePrs = firstTimePrCounts(activity.recentPullRequests, config);
   await db.$transaction(async (tx) => {
     await tx.repo.update({
       where: { id: repo.id },
@@ -166,8 +151,6 @@ async function refreshRepo(
           activity.recentItems,
           config,
         ),
-        firstTimePrsTotal: firstTimePrs.total,
-        firstTimePrsMerged: firstTimePrs.merged,
       },
     });
     for (const issue of eligible) {

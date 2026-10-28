@@ -14,10 +14,10 @@ Do not put this URL in your local `.env` as `DATABASE_URL`: local development sh
 
 In GitHub: **Settings → Secrets and variables → Actions → New repository secret**.
 
-| Secret                | Value                                |
-| --------------------- | ------------------------------------ |
-| `DATABASE_URL`        | the Neon direct connection string    |
-| `INGEST_GITHUB_TOKEN` | a GitHub token (see the tutorial)    |
+| Secret                | Value                             |
+| --------------------- | --------------------------------- |
+| `DATABASE_URL`        | the Neon direct connection string |
+| `INGEST_GITHUB_TOKEN` | a GitHub token (see the tutorial) |
 
 If the token is fine-grained and expires, the nightly job starts failing on that date.
 
@@ -38,9 +38,9 @@ select * from "IngestRun" order by id desc limit 3;
 
 ## Schedule
 
-| Cron           | When                  | Mode                          |
-| -------------- | --------------------- | ----------------------------- |
-| `0 3 * * 0`    | Sundays, 03:00 UTC    | discovery and refresh         |
-| `0 3 * * 1-6`  | Monday–Saturday       | refresh only (`--skip-discovery`) |
+| Cron          | When               | Mode                              |
+| ------------- | ------------------ | --------------------------------- |
+| `0 3 * * 0`   | Sundays, 03:00 UTC | discovery and refresh             |
+| `0 3 * * 1-6` | Monday–Saturday    | refresh only (`--skip-discovery`) |
 
 If the run is cold-starting Neon, the migrate step retries up to five times before failing.
