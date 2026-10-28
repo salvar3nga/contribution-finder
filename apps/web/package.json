@@ -8,12 +8,15 @@
     "start": "next start",
     "lint": "eslint",
     "typecheck": "next typegen && tsc --noEmit",
-    "test": "echo \"no web tests yet\""
+    "test": "vitest run --passWithNoTests"
   },
   "dependencies": {
     "next": "16.4.3",
     "react": "19.3.0",
-    "react-dom": "19.3.0"
+    "react-dom": "19.3.0",
+    "@cf/db": "workspace:*",
+    "@cf/scoring": "workspace:*",
+    "@cf/profile": "workspace:*"
   },
   "devDependencies": {
     "@tailwindcss/turbopack": "^4",
@@ -22,6 +25,7 @@
     "@types/react-dom": "^19",
     "eslint": "^9",
     "eslint-config-next": "16.4.3",
-    "tailwindcss": "^4"
+    "tailwindcss": "^4",
+    "vitest": "^5.0.5"
   }
 }

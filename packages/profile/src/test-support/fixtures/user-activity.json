@@ -1,0 +1,46 @@
+{
+  "data": {
+    "rateLimit": { "remaining": 4990, "resetAt": "2026-10-28T13:00:00Z" },
+    "user": {
+      "repositories": {
+        "nodes": [
+          {
+            "id": "R_owned_recent",
+            "pushedAt": "2026-10-01T10:00:00Z",
+            "primaryLanguage": { "name": "TypeScript" },
+            "repositoryTopics": { "nodes": [{ "topic": { "name": "cli" } }] }
+          },
+          {
+            "id": "R_owned_stale",
+            "pushedAt": "2024-01-01T10:00:00Z",
+            "primaryLanguage": { "name": "Go" },
+            "repositoryTopics": { "nodes": [] }
+          },
+          {
+            "id": "R_owned_no_language",
+            "pushedAt": "2026-09-01T10:00:00Z",
+            "primaryLanguage": null,
+            "repositoryTopics": { "nodes": [] }
+          }
+        ]
+      }
+    },
+    "search": {
+      "nodes": [
+        {
+          "repository": {
+            "id": "R_upstream",
+            "primaryLanguage": { "name": "Rust" },
+            "repositoryTopics": {
+              "nodes": [
+                { "topic": { "name": "compiler" } },
+                { "topic": { "name": "cli" } }
+              ]
+            }
+          }
+        },
+        {}
+      ]
+    }
+  }
+}

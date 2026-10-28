@@ -12,6 +12,11 @@ enum IssueState {
   closed
 }
 
+enum ProfileOutcome {
+  profile
+  not_found
+}
+
 model Repo {
   id                      String    @id
   owner                   String
@@ -52,4 +57,15 @@ model IngestRun {
   issuesIngested      Int
   errors              Int
   stoppedForRateLimit Boolean
+}
+
+model Profile {
+  username      String         @id
+  outcome       ProfileOutcome
+  languageShare Json?
+  topics        String[]
+  emptyProfile  Boolean        @default(false)
+  builtAt       DateTime
+
+  @@index([builtAt])
 }
