@@ -33,7 +33,7 @@ export function UsernameForm() {
         </p>
       ) : (
         <p id="username-hint" className="hint">
-          We read your public activity from the last 12 months. No login.
+          Only your public activity from the last 12 months is used. No login.
         </p>
       )}
     </form>

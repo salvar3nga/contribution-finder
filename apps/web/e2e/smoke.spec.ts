@@ -50,7 +50,7 @@ test('not found, rate-limited and error states link back to Home', async ({
   page,
 }) => {
   for (const [username, heading] of [
-    ['ghost', "We couldn't find that user"],
+    ['ghost', 'No GitHub user with that name'],
     ['throttled', 'Too many lookups right now'],
     ['broken', 'Something went wrong'],
   ] as const) {

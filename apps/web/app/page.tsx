@@ -11,9 +11,9 @@ export default function Home() {
       <div>
         <h1 className="display">Find your next open-source contribution.</h1>
         <p className="lede">
-          Enter a GitHub username. We rank beginner-friendly issues against the
-          languages and topics you already work with, and show exactly how each
-          score was made.
+          Enter a GitHub username to see beginner-friendly issues ranked against
+          the languages and topics you already work with, with the full
+          breakdown of every score.
         </p>
         <UsernameForm />
       </div>

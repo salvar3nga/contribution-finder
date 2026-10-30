@@ -15,7 +15,7 @@ export default function ErrorState({ reset }: { reset: () => void }) {
         Something went wrong
       </h1>
       <p>
-        We couldn&apos;t load this page. Try again, or start over from home.
+        This page didn&apos;t load. You can try again, or start over from home.
       </p>
       <div className="field-row">
         <button className="button" type="button" onClick={reset}>

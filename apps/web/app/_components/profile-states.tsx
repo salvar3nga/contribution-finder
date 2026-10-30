@@ -20,7 +20,7 @@ function State({
 
 export function ProfileNotFound({ username }: { username: string }) {
   return (
-    <State title="We couldn't find that user">
+    <State title="No GitHub user with that name">
       GitHub has no user called {username}, or the name belongs to an
       organisation. Check the spelling and try again.
     </State>

@@ -81,7 +81,7 @@ describe('Issue detail', () => {
     ).toMatchObject({ value: null });
   });
 
-  it('returns null for an Issue we do not have', async () => {
+  it('returns null for an Issue that is not in the database', async () => {
     await seedRepo(db, { name: 'widgets' }, [{ number: 1 }]);
 
     expect(
