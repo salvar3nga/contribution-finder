@@ -94,6 +94,35 @@ describe('ranking Issues for a Profile', () => {
     expect(scores).toEqual([...scores].sort((a, b) => b - a));
   });
 
+  it('orders Issues with equal Match scores by most recent activity', async () => {
+    await seedRepo(db, { name: 'tied' }, [
+      { title: 'older', lastActivityAt: daysAgo(20) },
+      { title: 'newest', lastActivityAt: daysAgo(2) },
+      { title: 'newer', lastActivityAt: daysAgo(10) },
+    ]);
+
+    const { items } = await rank();
+
+    expect(new Set(items.map((item) => item.matchScore)).size).toBe(1);
+    expect(items.map((item) => item.issue.title)).toEqual([
+      'newest',
+      'newer',
+      'older',
+    ]);
+  });
+
+  it('orders Issues with equal score and activity by Issue id', async () => {
+    const sameMoment = daysAgo(5);
+    await seedRepo(db, { name: 'tied' }, [
+      { number: 2, title: 'second', lastActivityAt: sameMoment },
+      { number: 1, title: 'first', lastActivityAt: sameMoment },
+    ]);
+
+    const { items } = await rank();
+
+    expect(items.map((item) => item.issue.title)).toEqual(['first', 'second']);
+  });
+
   it('clamps an out-of-range page to the last page', async () => {
     await seedRepo(db, { name: 'small' }, [{}, {}]);
 
