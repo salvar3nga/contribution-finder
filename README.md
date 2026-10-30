@@ -2,13 +2,19 @@
 
 Find beginner-friendly open source issues that match your GitHub profile, ranked with a transparent score and a project health signal.
 
-> Work in progress.
+**Live demo: <https://contribution-finder.vercel.app>**. Enter a GitHub username to see ranked Issues. The first lookup for a username can take a few seconds while the Profile is built.
 
 ## How it works
 
 - A scheduled **ingest** job copies Repos and their `good first issue` / `help wanted` Issues from the GitHub GraphQL API into Postgres.
-- A rule-based **Match score** and **Health score** rank them, and show the per-component breakdown.
-- A Next.js web app reads from Postgres.
+- The web app builds a **Profile** from a username (languages and topics from your public activity in the last 12 months) and caches it in Postgres.
+- A rule-based **Match score** ranks every Issue against the Profile from five weighted components: language, repo health, topics, freshness and whether the Issue is unclaimed.
+- The **Health score** of a Repo comes from how quickly maintainers respond and how recently they committed. A Repo with too little data shows "not enough data" instead of a guess.
+- Every score shows its per-component breakdown on the Issue page. Weights and thresholds live in one config file ([scoring reference](docs/reference/scoring-config.md)).
+
+## Stack
+
+Next.js and TypeScript, Postgres with Prisma, a pnpm monorepo (`apps/web`, `apps/ingest`, `packages/*`), Vitest and Playwright. Deployed on Vercel with Neon Postgres; the ingest runs nightly on GitHub Actions.
 
 ## Quick start
 
@@ -32,7 +38,7 @@ Start the web app with `pnpm dev`. Check the code with `pnpm lint`, `pnpm typech
 
 ## Documentation
 
-Start with [Getting started](docs/tutorials/getting-started.md). The [docs](docs/) follow the Diátaxis framework: tutorials, how-to guides, reference and explanation.
+Start with [Getting started](docs/tutorials/getting-started.md). The [docs](docs/) follow the Diátaxis framework: tutorials, how-to guides, reference and explanation. To run the nightly ingest against Neon, see [Deploy the nightly ingest](docs/how-to/deploy-nightly-ingest.md).
 
 ## License
 
