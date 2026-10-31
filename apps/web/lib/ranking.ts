@@ -13,6 +13,11 @@ const dayMs = 24 * 60 * 60 * 1000;
 
 export type ScoringProfile = MatchInput['profile'];
 
+export type ScoringRepo = Pick<
+  Repo,
+  'language' | 'topics' | 'medianFirstResponseHours' | 'lastCommitAt'
+>;
+
 export interface RankedIssue {
   issue: { id: string; number: number; title: string; claimed: boolean };
   repo: {
@@ -52,7 +57,7 @@ export interface ScoredIssue {
 
 export function scoreIssue(
   profile: ScoringProfile,
-  repo: Repo,
+  repo: ScoringRepo,
   issue: IssueFacts,
   now: Date,
   health: HealthResult = healthScoreOf(repo, now),
@@ -73,7 +78,7 @@ export function scoreIssue(
   return { match, health };
 }
 
-export function healthScoreOf(repo: Repo, now: Date): HealthResult {
+export function healthScoreOf(repo: ScoringRepo, now: Date): HealthResult {
   return healthScore({
     medianFirstResponseHours: repo.medianFirstResponseHours,
     daysSinceLastCommit:
@@ -104,12 +109,35 @@ interface RankedIssueRow extends RankedIssue {
   lastActivityAt: Date;
 }
 
-export type ActiveRepo = Repo & { issues: Issue[] };
+export type ActiveRepo = ScoringRepo &
+  Pick<Repo, 'owner' | 'name'> & {
+    issues: Pick<
+      Issue,
+      'id' | 'number' | 'title' | 'claimed' | 'lastActivityAt'
+    >[];
+  };
 
 export function loadActiveRepos(db: PrismaClient): Promise<ActiveRepo[]> {
   return db.repo.findMany({
     where: { active: true },
-    include: { issues: { where: { state: 'open' } } },
+    select: {
+      owner: true,
+      name: true,
+      language: true,
+      topics: true,
+      lastCommitAt: true,
+      medianFirstResponseHours: true,
+      issues: {
+        where: { state: 'open' },
+        select: {
+          id: true,
+          number: true,
+          title: true,
+          claimed: true,
+          lastActivityAt: true,
+        },
+      },
+    },
   });
 }
 
