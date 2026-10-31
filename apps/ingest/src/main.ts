@@ -3,6 +3,7 @@ import { createDb } from '@cf/db';
 import { defaultIngestConfig } from './config.js';
 import { createGraphqlGitHubClient } from './graphql-client.js';
 import { runIngest, shouldFail } from './pipeline.js';
+import { pruneStaleProfiles } from './prune-profiles.js';
 
 function requiredEnv(name: string): string {
   const value = process.env[name];
@@ -55,6 +56,8 @@ async function main(): Promise<number> {
       discover,
       log: console.log,
     });
+    const pruned = await pruneStaleProfiles(db, new Date());
+    console.log(`Pruned ${pruned} stale profiles`);
     return shouldFail(summary, defaultIngestConfig) ? 1 : 0;
   } finally {
     await db.$disconnect();
