@@ -34,7 +34,10 @@ async function fakeProfileOutcome(username: string): Promise<ProfileOutcome> {
 export async function getProfileOutcome(
   username: string,
 ): Promise<ProfileOutcome> {
-  if (process.env.FAKE_PROFILE_SOURCE === '1') {
+  if (
+    process.env.FAKE_PROFILE_SOURCE === '1' &&
+    process.env.VERCEL_ENV !== 'production'
+  ) {
     return fakeProfileOutcome(username);
   }
   const buildProfile = createProfileBuilder({
