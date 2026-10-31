@@ -67,6 +67,8 @@ model Profile {
   topics        String[]
   emptyProfile  Boolean        @default(false)
   builtAt       DateTime
+  requestedBy   String?
 
   @@index([builtAt])
+  @@index([requestedBy, builtAt])
 }

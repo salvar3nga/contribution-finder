@@ -10,6 +10,7 @@ const activityWindowMonths = 12;
 const profileTtlMs = 24 * hourMs;
 const notFoundTtlMs = hourMs;
 const uncachedBuildsPerHour = 800;
+const uncachedBuildsPerRequesterPerHour = 20;
 
 export interface Profile {
   languageShare: Record<string, number>;
@@ -61,7 +62,10 @@ export function createProfileBuilder({
   db,
   client,
   now = () => new Date(),
-}: ProfileBuilderOptions): (username: string) => Promise<ProfileOutcome> {
+}: ProfileBuilderOptions): (
+  username: string,
+  requester?: string,
+) => Promise<ProfileOutcome> {
   async function cachedOutcome(
     key: string,
     at: Date,
@@ -87,6 +91,7 @@ export function createProfileBuilder({
     key: string,
     at: Date,
     outcome: ProfileOutcome,
+    requester: string | undefined,
   ): Promise<void> {
     const data =
       outcome.kind === 'profile'
@@ -104,14 +109,29 @@ export function createProfileBuilder({
             emptyProfile: false,
             builtAt: at,
           };
+    const stored = { ...data, requestedBy: requester ?? null };
     await db.profile.upsert({
       where: { username: key },
-      create: { username: key, ...data },
-      update: data,
+      create: { username: key, ...stored },
+      update: stored,
     });
   }
 
-  return async function buildProfile(username) {
+  async function requesterIsOverLimit(
+    requester: string | undefined,
+    at: Date,
+  ): Promise<boolean> {
+    if (requester === undefined) return false;
+    const recentBuilds = await db.profile.count({
+      where: {
+        requestedBy: requester,
+        builtAt: { gt: new Date(at.getTime() - hourMs) },
+      },
+    });
+    return recentBuilds >= uncachedBuildsPerRequesterPerHour;
+  }
+
+  return async function buildProfile(username, requester) {
     const key = username.toLowerCase();
     const at = now();
 
@@ -122,6 +142,9 @@ export function createProfileBuilder({
       where: { builtAt: { gt: new Date(at.getTime() - hourMs) } },
     });
     if (recentBuilds >= uncachedBuildsPerHour) return { kind: 'rate-limited' };
+    if (await requesterIsOverLimit(requester, at)) {
+      return { kind: 'rate-limited' };
+    }
 
     let outcome: ProfileOutcome;
     try {
@@ -143,7 +166,7 @@ export function createProfileBuilder({
       if (error instanceof RateLimitedError) return { kind: 'rate-limited' };
       throw error;
     }
-    await store(key, at, outcome);
+    await store(key, at, outcome, requester);
     return outcome;
   };
 }

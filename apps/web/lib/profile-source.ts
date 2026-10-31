@@ -5,6 +5,7 @@ import {
   type ProfileOutcome,
 } from '@cf/profile';
 import { getDb } from './db';
+import { currentRequesterKey } from './requester';
 
 const fakeProfiles: Record<string, ProfileOutcome> = {
   ghost: { kind: 'not-found' },
@@ -40,5 +41,5 @@ export async function getProfileOutcome(
     db: getDb(),
     client: createGraphqlUserClient({ tokenSource: environmentTokenSource() }),
   });
-  return buildProfile(username);
+  return buildProfile(username, await currentRequesterKey());
 }

@@ -211,6 +211,60 @@ describe('rate protection', () => {
     expect(await build('user7')).toMatchObject({ kind: 'profile' });
   });
 
+  it('rate-limits a requester after 20 uncached builds in an hour without affecting others', async () => {
+    const client = fakeUserClient(() => foundActivity([aRepo('a', 'Go')]));
+    const build = builderFor(client);
+    await db.profile.createMany({
+      data: Array.from({ length: 20 }, (_, index) => ({
+        username: `user${index}`,
+        outcome: 'profile' as const,
+        languageShare: { Go: 100 },
+        topics: [],
+        builtAt: new Date(now.getTime() - 10 * 60 * 1000),
+        requestedBy: 'greedy',
+      })),
+    });
+
+    expect(await build('newcomer', 'greedy')).toEqual({ kind: 'rate-limited' });
+    expect(client.calls).toHaveLength(0);
+    expect(await build('user7', 'greedy')).toMatchObject({ kind: 'profile' });
+    expect(await build('newcomer', 'polite')).toMatchObject({
+      kind: 'profile',
+    });
+    expect(await build('anonymous')).toMatchObject({ kind: 'profile' });
+  });
+
+  it('counts the requester of every stored outcome, including not found', async () => {
+    const client = fakeUserClient(() => ({ status: 'not-found' }));
+    const build = builderFor(client);
+
+    for (let index = 0; index < 20; index++) {
+      await build(`ghost${index}`, 'greedy');
+    }
+
+    expect(await build('ghost20', 'greedy')).toEqual({ kind: 'rate-limited' });
+    expect(client.calls).toHaveLength(20);
+  });
+
+  it('does not count requester builds older than an hour', async () => {
+    const client = fakeUserClient(() => foundActivity([aRepo('a', 'Go')]));
+    const build = builderFor(client);
+    await db.profile.createMany({
+      data: Array.from({ length: 20 }, (_, index) => ({
+        username: `user${index}`,
+        outcome: 'profile' as const,
+        languageShare: { Go: 100 },
+        topics: [],
+        builtAt: new Date(now.getTime() - 2 * hour),
+        requestedBy: 'greedy',
+      })),
+    });
+
+    expect(await build('newcomer', 'greedy')).toMatchObject({
+      kind: 'profile',
+    });
+  });
+
   it('does not count builds older than an hour', async () => {
     const client = fakeUserClient(() => foundActivity([aRepo('a', 'Go')]));
     const build = builderFor(client);
