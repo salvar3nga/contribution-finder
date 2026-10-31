@@ -14,6 +14,8 @@ import {
 import { ResultsSkeleton } from '@/app/_components/results-skeleton';
 import { strengthLabels } from '@/app/_components/component-labels';
 import { formatScore } from '@/app/_components/score-label';
+import { timed } from '@/lib/timing';
+import { LinkPending } from '@/app/_components/link-pending';
 
 export async function generateMetadata({
   params,
@@ -53,13 +55,14 @@ async function Results({ params, searchParams }: PageProps<'/u/[username]'>) {
   const language = firstValue(query.language);
   const page = Number.parseInt(firstValue(query.page) ?? '1', 10) || 1;
 
-  const outcome = await getProfileOutcome(username);
+  const outcome = await timed('profile', () => getProfileOutcome(username));
   if (outcome.kind === 'not-found')
     return <ProfileNotFound username={username} />;
   if (outcome.kind === 'rate-limited') return <ProfileRateLimited />;
 
   const { profile } = outcome;
-  const ranking = rankIssues(await getActiveRepos(), profile, {
+  const activeRepos = await timed('active-repos', getActiveRepos);
+  const ranking = rankIssues(activeRepos, profile, {
     language,
     page,
     now: new Date(),
@@ -131,6 +134,7 @@ function LanguageFilter({
                 aria-current={current ? 'true' : undefined}
               >
                 {option ?? 'All languages'}
+                <LinkPending />
                 {option !== null && shareOf(languageShare, option) > 0 && (
                   <span className="chip-share">
                     {Math.round(shareOf(languageShare, option))}%
@@ -225,6 +229,7 @@ function Pagination({
           rel="prev"
         >
           Previous
+          <LinkPending />
         </Link>
       ) : (
         <span
@@ -245,6 +250,7 @@ function Pagination({
           rel="next"
         >
           Next
+          <LinkPending />
         </Link>
       ) : (
         <span
