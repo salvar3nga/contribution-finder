@@ -251,6 +251,17 @@ h2 {
   margin: 0 0 0.75rem;
 }
 
+.result-count,
+.issue-list {
+  transition: opacity 200ms cubic-bezier(0.16, 1, 0.3, 1) 150ms;
+}
+body:has(.link-pending[data-pending]) :is(.result-count, .issue-list) {
+  opacity: 0.45;
+}
+a:has(> .link-pending[data-pending]) {
+  cursor: progress;
+}
+
 .issue-list {
   list-style: none;
   margin: 0;
