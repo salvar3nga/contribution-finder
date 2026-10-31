@@ -30,6 +30,8 @@ Entry point: `apps/ingest/src/main.ts`. It is run by `pnpm --filter @cf/ingest s
 | `--max-repos <n>`  | Positive integer. Limits discovery and the number of Repos refreshed |
 | `--skip-discovery` | Skips the search step and only refreshes stored Repos                |
 
+After the ingest finishes, the run deletes cached Profiles built more than 7 days ago and logs how many it removed.
+
 ### Exit codes
 
 | Code | When                                                                                                                   |

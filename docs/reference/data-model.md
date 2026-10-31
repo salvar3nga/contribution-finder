@@ -31,7 +31,7 @@ Defined in `packages/db/prisma/schema.prisma`. Identifiers are GitHub node ids, 
 
 ## `Profile`
 
-Cache of built Profiles, keyed by lowercased username.
+Cache of built Profiles, keyed by lowercased username. The nightly ingest deletes rows whose `builtAt` is more than 7 days old.
 
 | Field           | Type                    | Notes                                                                   |
 | --------------- | ----------------------- | ----------------------------------------------------------------------- |
