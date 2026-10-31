@@ -1,4 +1,4 @@
-import { afterAll, beforeEach, describe, expect, it } from 'vitest';
+import { afterAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { PrismaClient } from '@cf/db';
 import { pruneStaleProfiles } from './prune-profiles.js';
 import { createCleanTestDb } from './test-support/database.js';
@@ -36,10 +36,11 @@ describe('pruneStaleProfiles', () => {
         aProfile('fresh', now),
       ],
     });
+    const log = vi.fn();
 
-    const deleted = await pruneStaleProfiles(db, now);
+    await pruneStaleProfiles(db, now, log);
 
-    expect(deleted).toBe(1);
+    expect(log).toHaveBeenCalledWith('Pruned 1 stale profiles');
     const remaining = await db.profile.findMany({
       orderBy: { username: 'asc' },
     });
@@ -51,7 +52,28 @@ describe('pruneStaleProfiles', () => {
 
   it('deletes nothing when every Profile is recent', async () => {
     await db.profile.createMany({ data: [aProfile('fresh', now)] });
+    const log = vi.fn();
 
-    expect(await pruneStaleProfiles(db, now)).toBe(0);
+    await pruneStaleProfiles(db, now, log);
+
+    expect(log).toHaveBeenCalledWith('Pruned 0 stale profiles');
+    expect(await db.profile.count()).toBe(1);
+  });
+
+  it('logs a failure instead of throwing, so it cannot fail the ingest', async () => {
+    const failingDb = {
+      profile: {
+        deleteMany: () => Promise.reject(new Error('connection lost')),
+      },
+    } as unknown as PrismaClient;
+    const log = vi.fn();
+
+    await expect(
+      pruneStaleProfiles(failingDb, now, log),
+    ).resolves.toBeUndefined();
+
+    expect(log).toHaveBeenCalledWith(
+      'Failed to prune stale profiles: Error: connection lost',
+    );
   });
 });

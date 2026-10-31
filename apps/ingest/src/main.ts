@@ -56,8 +56,7 @@ async function main(): Promise<number> {
       discover,
       log: console.log,
     });
-    const pruned = await pruneStaleProfiles(db, new Date());
-    console.log(`Pruned ${pruned} stale profiles`);
+    await pruneStaleProfiles(db, new Date(), console.log);
     return shouldFail(summary, defaultIngestConfig) ? 1 : 0;
   } finally {
     await db.$disconnect();

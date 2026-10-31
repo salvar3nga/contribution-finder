@@ -5,6 +5,7 @@ import { connection } from 'next/server';
 import { Suspense } from 'react';
 import type { BreakdownEntry } from '@cf/scoring';
 import { getDb } from '@/lib/db';
+import { safeGitHubUrl } from '@/lib/github-url';
 import { decodeParam, usernameFromParam } from '@/lib/username';
 import { findIssueDetail } from '@/lib/issue-detail';
 import { getProfileOutcome } from '@/lib/profile-source';
@@ -80,6 +81,7 @@ async function IssueDetail({ params }: Props) {
 
   const { issue, repo, match, health } = detail;
   const noData = <span className="no-data">no data</span>;
+  const githubUrl = safeGitHubUrl(issue.url);
 
   return (
     <>
@@ -100,14 +102,16 @@ async function IssueDetail({ params }: Props) {
           </>
         )}
       </p>
-      <a
-        className="button"
-        href={issue.url}
-        target="_blank"
-        rel="noopener noreferrer"
-      >
-        View on GitHub<span className="sr-only"> (opens in a new tab)</span>
-      </a>
+      {githubUrl !== null && (
+        <a
+          className="button"
+          href={githubUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          View on GitHub<span className="sr-only"> (opens in a new tab)</span>
+        </a>
+      )}
 
       <div className="detail-grid facts-block">
         <section aria-labelledby="match-heading">
