@@ -30,6 +30,38 @@ test('a username leads to ranked results and an Issue detail', async ({
   ).toHaveAttribute('href', 'https://github.com/acme/widgets/issues/7');
 });
 
+test('every page sends security headers and the policy blocks nothing the app needs', async ({
+  page,
+}) => {
+  const violations: string[] = [];
+  page.on('console', (message) => {
+    if (message.text().includes('Content Security Policy')) {
+      violations.push(message.text());
+    }
+  });
+
+  const response = await page.goto('/');
+  const headers = response!.headers();
+  expect(headers['content-security-policy']).toContain(
+    "frame-ancestors 'none'",
+  );
+  expect(headers['content-security-policy']).toContain("object-src 'none'");
+  expect(headers['x-content-type-options']).toBe('nosniff');
+  expect(headers['x-frame-options']).toBe('DENY');
+  expect(headers['referrer-policy']).toBe('strict-origin-when-cross-origin');
+  expect(headers['strict-transport-security']).toContain('max-age=');
+
+  await page.getByLabel('GitHub username').fill('sergio');
+  await page.getByRole('button', { name: 'Find issues' }).click();
+  await expect(page).toHaveURL(/\/u\/sergio$/);
+  await page.getByRole('link', { name: 'Fix the widget alignment' }).click();
+  await expect(
+    page.getByRole('heading', { name: 'Match score' }),
+  ).toBeVisible();
+
+  expect(violations).toEqual([]);
+});
+
 test('the language filter narrows the list', async ({ page }) => {
   await page.goto('/u/sergio');
   await page.getByRole('link', { name: /^Go/ }).click();
